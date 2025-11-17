@@ -27,6 +27,7 @@ This is how you can work with it:
 - Run \`${COLOR_GREEN}build-filter${COLOR_RESET}\`
 - Run \`${COLOR_GREEN}pcp${COLOR_RESET}\`
 - Run \`${COLOR_GREEN}server${COLOR_RESET}\`
+- Run \`${COLOR_GREEN}xproc${COLOR_RESET}\`
 
 "
 
@@ -39,6 +40,7 @@ touch /tmp/a
 echo "alias discovery-agent=\"cd ${SRC_ROOT} && dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient cmd/agent/discovery/main.go -- start\"" >> /tmp/a
 echo "alias appsecgw=\"cd ${SRC_ROOT} && dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient appsecgw/cmd/main.go -- start --api-addr=http://wafie-control-plane \"" >> /tmp/a
 echo "alias server=\"cd ${SRC_ROOT} && dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient cmd/apiserver/main.go -- start --db-host=wafy-postgresql \"" >> /tmp/a
+echo "alias xproc=\"cd ${SRC_ROOT} && dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient cmd/xproc/main.go -- start \"" >> /tmp/a
 echo "alias run-envoy=\"envoy -c ops/envoy/envoy.yaml\"" >> /tmp/a
 echo "alias build-filter=\"go build -ldflags='-s -w' -o ./kubeguard-modsec.so -buildmode=c-shared ./cmd/modsecfilter\"" >> /tmp/a
 # Include project's bin/ folder in PATH

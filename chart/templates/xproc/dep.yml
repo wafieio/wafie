@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wafie-xproc
+  namespace: {{.Release.Namespace}}
+  labels:
+    app: wafie-xproc
+spec:
+  selector:
+    matchLabels:
+      app: wafie-xproc
+  template:
+    metadata:
+      labels:
+        app: wafie-xproc
+    spec:
+      serviceAccountName: wafie-xproc
+      containers:
+        - name: grpc-server
+          image: {{.Values.xproc.image}}
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - -c
+            - sleep inf
+          ports:
+            - name: grpc-server
+              containerPort: 50051

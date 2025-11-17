@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-envoy
+  labels:
+    app: dev-envoy
+spec:
+  selector:
+    matchLabels:
+      app: dev-envoy
+  template:
+    metadata:
+      labels:
+        app: dev-envoy
+    spec:
+      containers:
+        - name: envoy
+          image: envoyproxy/envoy:v1.36.2
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /config
+              name: config
+          command:
+            - /usr/local/bin/envoy
+            - -c
+            - /config/config.yaml
+          ports:
+            - name: http
+              containerPort: 20000
+      volumes:
+        - name: config
+          configMap:
+            name: envoy-dev-config
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: envoy-dev-config
+data:
+  config.yaml: |
+    node:
+      cluster: cwaf-cluster
+      id: cwaf-cluster-1
+    admin:
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 9901 }
+    static_resources:
+      listeners:
+        - name: listener_0
+          address:
+            socket_address: { address: 0.0.0.0, port_value: 20000 }
+          filter_chains:
+            - filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: ingress_http
+                    http_filters:
+                      - name: envoy.filters.http.ext_proc
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                          grpc_service:
+                            envoy_grpc:
+                              cluster_name: ext_proc_cluster
+                          request_attributes:
+                            - request.protocol
+                            - request.method
+                            - request.path
+                            - source.address
+                          processing_mode:
+                            request_header_mode: SEND
+                            response_header_mode: SEND
+                            request_body_mode: BUFFERED
+                            response_body_mode: NONE
+                          mutation_rules:
+                            allow_all_routing: true
+                            allow_envoy: true
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                    codec_type: AUTO
+                    route_config:
+                      name: local_route
+                      virtual_hosts:
+                        - name: local_service
+                          domains: ["*"]
+                          routes:
+                            - match: { prefix: "/" }
+                              route: { cluster: wp_service }
+                    use_remote_address: true
+    
+      clusters:
+        - name: ext_proc_cluster
+          connect_timeout: 1s
+          type: LOGICAL_DNS
+          lb_policy: ROUND_ROBIN
+          http2_protocol_options: {}
+          load_assignment:
+            cluster_name: ext_proc_cluster
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: wafie-xproc.default.svc
+                          port_value: 50051
+        - name: wp_service
+          connect_timeout: 0.25s
+          type: STRICT_DNS
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: wp_service
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          address: wp-wordpress.default.svc
+                          port_value: 80
+    
+                          

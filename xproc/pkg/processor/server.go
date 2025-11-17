@@ -36,11 +36,32 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		switch r := req.Request.(type) {
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
+			modSec := modsec.NewModSec(s.logger)
+			modSec.NewEvaluationRequest(r.RequestHeaders.Headers.Headers)
+
+			attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
+
+			for _, attribute := range attributes {
+				if attrVal, ok := req.Attributes["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
+					s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
+				}
+			}
+			//for attrName, attrValue := range req.Attributes {
+			//	s.logger.Info("request attributes",
+			//		zap.String(attrName, attrValue.String()))
+			//}
+			//if val, ok := req.Attributes[attrName]; ok {
+			//	s.logger.Info("request attributes",
+			//		zap.String("path", attr.String()))
+			//}
+			//}
+
+			//modsec.EvaluationRequestHeaders(r.RequestHeaders.Headers.Headers)
 			for _, header := range r.RequestHeaders.Headers.Headers {
 				if header.Key == "foo" {
 					if err := stream.Send(immediateResponse()); err != nil {
 						fmt.Println(err)
-						modsec.EvaluationRequestHeaders()
+
 					}
 					return nil
 				}
