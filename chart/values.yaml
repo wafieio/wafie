@@ -22,6 +22,9 @@ appSecGw:
 relay:
   image: docker.io/dimssss/wafie-relay:latest
 
+xproc:
+  image: docker.io/dimssss/wafie-xproc:latest
+
 # Shared configurations
 config:
   apiAddr: ""

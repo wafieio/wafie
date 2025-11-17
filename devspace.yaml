@@ -4,9 +4,9 @@ dev:
   app:
     workingDir: /go/src/github.com/Dimss/wafie
     labelSelector:
-      app: "appsecgw"
-    container: gateway
-    devImage: dimssss/wafie-appsecgw-dev:latest
+      app: "wafie-xproc"
+    container: api-server
+    devImage: docker.io/dimssss/wafie-xproc
     sync:
       - path: ./:./
         waitInitialSync: true

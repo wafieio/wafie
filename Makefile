@@ -28,6 +28,11 @@ build.appsecgw.image.dev:
 	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-appsecgw-dev --platform linux/arm64 -f appsecgw/Dockerfile.dev .
 	podman push docker.io/dimssss/wafie-appsecgw-dev
 
+xproc.image:
+	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-xproc --platform linux/arm64 -f xproc/Containerfile .
+	podman push docker.io/dimssss/wafie-xproc
+
+
 # Discovery build
 build.discovery:
 	go build \
