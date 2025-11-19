@@ -8,7 +8,9 @@ package modsec
 import "C"
 import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.uber.org/zap"
+	"strings"
 	"unsafe"
 )
 
@@ -17,42 +19,56 @@ type ModeSec struct {
 }
 
 func NewModSec(logger *zap.Logger) *ModeSec {
+	// init modsecurity library
+	C.wafie_library_init(C.CString("/config"))
 	return &ModeSec{logger: logger}
 }
 
-func (s *ModeSec) EvaluationRequestHeaders(reqHeaders []*corev3.HeaderValue) *C.EvaluationRequestHeader {
-	var evalRequestHeaders = (*C.EvaluationRequestHeader)(
-		C.malloc(
-			C.size_t(unsafe.Sizeof(C.EvaluationRequestHeader{})) * C.size_t(len(reqHeaders)),
-		),
-	)
-	for i, reqHeader := range reqHeaders {
+func (s *ModeSec) FreeEvaluationRequest(evalRequest C.EvaluationRequest) {
+	C.free(unsafe.Pointer(evalRequest.client_ip))
+	C.free(unsafe.Pointer(evalRequest.uri))
+	C.free(unsafe.Pointer(evalRequest.http_method))
+	C.free(unsafe.Pointer(evalRequest.http_version))
+	for i := 0; i < int(evalRequest.headers_count); i++ {
 		hdr := (*C.EvaluationRequestHeader)(
-			unsafe.Pointer(uintptr(unsafe.Pointer(evalRequestHeaders)) + uintptr(i)*
+			unsafe.Pointer(uintptr(unsafe.Pointer(evalRequest.headers)) + uintptr(i)*
 				unsafe.Sizeof(C.EvaluationRequestHeader{})))
-		hdr.key = (*C.uchar)(unsafe.Pointer(C.CString(reqHeader.Key)))
-		hdr.value = (*C.uchar)(unsafe.Pointer(C.CString(reqHeader.Value)))
+		C.free(unsafe.Pointer(hdr.key))
+		C.free(unsafe.Pointer(hdr.value))
 	}
-	return evalRequestHeaders
+	C.free(unsafe.Pointer(evalRequest.headers))
 }
 
-func (s *ModeSec) NewEvaluationRequest(reqHeaders []*corev3.HeaderValue) {
-	C.wafie_library_init(C.CString("/config"))
-	var evalRequest C.EvaluationRequest
-	//var clientIp, httpVersion string
-	//ip := "1.2.3.4"
-
-	evalRequest.client_ip = C.CString("1.2.3.4")
-	evalRequest.uri = C.CString("foo/bar")
-	evalRequest.http_method = C.CString("method")
-	evalRequest.http_version = C.CString("httpVersion")
-	evalRequest.headers_count = C.size_t(len(reqHeaders))
-	//evalRequest.headers = s.EvaluationRequestHeaders(reqHeaders)
+func (s *ModeSec) EnvoyProcessingToEvalRequest(
+	envoyProcessingAttributes map[string]*structpb.Value,
+	hdrs []*corev3.HeaderValue) (evalRequest C.EvaluationRequest) {
+	attributes := map[string]string{
+		"request.path":     "",
+		"source.address":   "",
+		"request.protocol": "",
+		"request.method":   "",
+	}
+	for attributeKey, _ := range attributes {
+		if attrVal, ok := envoyProcessingAttributes[attributeKey]; ok {
+			attributes[attributeKey] = attrVal.GetStringValue()
+		}
+	}
+	// set basic intervention parameters
+	evalRequest.client_ip = C.CString(attributes["request.address"])
+	evalRequest.uri = C.CString(attributes["request.path"])
+	evalRequest.http_method = C.CString(attributes["request.method"])
+	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes["request.protocol"]))
+	// envoy by default will be using :authority for a host header
+	// ModSecurity need host header
+	hdrs = append(hdrs, &corev3.HeaderValue{Key: "host", RawValue: s.getAuthorityHeader(hdrs)})
+	// set headers size
+	headersCount := len(hdrs)
+	evalRequest.headers_count = C.size_t(headersCount)
 	evalRequest.headers = (*C.EvaluationRequestHeader)(
-		C.malloc(C.size_t(unsafe.Sizeof(C.EvaluationRequestHeader{})) * C.size_t(len(reqHeaders))),
+		C.malloc(C.size_t(unsafe.Sizeof(C.EvaluationRequestHeader{})) * C.size_t(headersCount)),
 	)
 
-	for idx, hdr := range reqHeaders {
+	for idx, hdr := range hdrs {
 		headerPtr := (*C.EvaluationRequestHeader)(
 			unsafe.Pointer(
 				uintptr(unsafe.Pointer(evalRequest.headers)) +
@@ -66,7 +82,27 @@ func (s *ModeSec) NewEvaluationRequest(reqHeaders []*corev3.HeaderValue) {
 			headerPtr.value = (*C.uchar)(unsafe.Pointer(C.CString(string(hdr.RawValue))))
 		}
 	}
-	evalRequest.body = nil
+	return evalRequest
+}
+
+func (s *ModeSec) getHttpProtocolVersion(protocol string) string {
+	protocolSlice := strings.Split(protocol, "/")
+	if len(protocolSlice) > 0 {
+		return protocolSlice[len(protocolSlice)-1]
+	}
+	return protocol
+}
+
+func (s *ModeSec) getAuthorityHeader(hdrs []*corev3.HeaderValue) []byte {
+	for _, hdr := range hdrs {
+		if hdr.Key == ":authority" {
+			return hdr.RawValue
+		}
+	}
+	return []byte{}
+}
+
+func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) {
 	C.wafie_init_request_transaction(&evalRequest)
 	s.logger.Info("new evaluation request",
 		zap.Any("client_ip", evalRequest.client_ip),
@@ -77,6 +113,6 @@ func (s *ModeSec) NewEvaluationRequest(reqHeaders []*corev3.HeaderValue) {
 		zap.Any("headers", evalRequest.headers),
 	)
 	if C.wafie_process_request_headers(&evalRequest) != 0 {
-		s.logger.Info("violation on headers")
+		s.logger.Info(" ########################## violation on headers ##########################")
 	}
 }

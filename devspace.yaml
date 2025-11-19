@@ -5,7 +5,7 @@ dev:
     workingDir: /go/src/github.com/Dimss/wafie
     labelSelector:
       app: "wafie-xproc"
-    container: api-server
+    container: grpc-server
     devImage: docker.io/dimssss/wafie-xproc
     sync:
       - path: ./:./
@@ -33,7 +33,5 @@ dev:
       enabled: true
     ports:
       - port: "2345"
-      - port: "10000"
-      - port: "19000"
 
 

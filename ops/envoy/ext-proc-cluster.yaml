@@ -22,6 +22,11 @@ static_resources:
                       grpc_service:
                         envoy_grpc:
                           cluster_name: ext_proc_cluster
+                      request_attributes:
+                        - request.protocol
+                        - request.method
+                        - request.path
+                        - source.address
                       processing_mode:
                         request_header_mode: SEND
                         response_header_mode: SEND
@@ -72,3 +77,5 @@ static_resources:
                     socket_address:
                       address: wp-wordpress.default.svc
                       port_value: 80
+    
+                          

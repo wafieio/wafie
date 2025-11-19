@@ -1,4 +1,4 @@
-FROM dimssss/modsec-debian as libwafie
+FROM docker.io/dimssss/modsec as libwafie
 
 FROM debian:bookworm-slim
 ARG ARCH

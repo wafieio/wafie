@@ -1,11 +1,11 @@
 package processor
 
 import (
-	"fmt"
 	"github.com/Dimss/wafie/xproc/pkg/modsec"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.uber.org/zap"
 	"io"
 	"log"
@@ -19,6 +19,15 @@ type ExternalProcessor struct {
 func NewExternalProcessor(logger *zap.Logger) *ExternalProcessor {
 	return &ExternalProcessor{
 		logger: logger,
+	}
+}
+
+func (s *ExternalProcessor) requestAttributes(requestAttr map[string]*structpb.Struct) {
+	attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
+	for _, attribute := range attributes {
+		if attrVal, ok := requestAttr["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
+			s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
+		}
 	}
 }
 
@@ -36,16 +45,22 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		switch r := req.Request.(type) {
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
+			//evalRequest := modsec.NewEvaluationRequest()
 			modSec := modsec.NewModSec(s.logger)
-			modSec.NewEvaluationRequest(r.RequestHeaders.Headers.Headers)
+			evalRequest := modSec.EnvoyProcessingToEvalRequest(
+				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
+				r.RequestHeaders.Headers.Headers,
+			)
+			modSec.EvaluateHeaders(evalRequest)
+			modSec.FreeEvaluationRequest(evalRequest)
 
-			attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
+			//attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
 
-			for _, attribute := range attributes {
-				if attrVal, ok := req.Attributes["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
-					s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
-				}
-			}
+			//for _, attribute := range attributes {
+			//	if attrVal, ok := req.Attributes["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
+			//		s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
+			//	}
+			//}
 			//for attrName, attrValue := range req.Attributes {
 			//	s.logger.Info("request attributes",
 			//		zap.String(attrName, attrValue.String()))
@@ -57,16 +72,16 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			//}
 
 			//modsec.EvaluationRequestHeaders(r.RequestHeaders.Headers.Headers)
-			for _, header := range r.RequestHeaders.Headers.Headers {
-				if header.Key == "foo" {
-					if err := stream.Send(immediateResponse()); err != nil {
-						fmt.Println(err)
-
-					}
-					return nil
-				}
-
-			}
+			//for _, header := range r.RequestHeaders.Headers.Headers {
+			//	if header.Key == "foo" {
+			//		if err := stream.Send(immediateResponse()); err != nil {
+			//			fmt.Println(err)
+			//
+			//		}
+			//		return nil
+			//	}
+			//
+			//}
 
 			resp = &extproc.ProcessingResponse{
 				Response: &extproc.ProcessingResponse_RequestHeaders{
@@ -76,6 +91,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 
 		case *extproc.ProcessingRequest_ResponseHeaders:
 			log.Println("Processing response headers")
+
 			resp = &extproc.ProcessingResponse{
 				Response: &extproc.ProcessingResponse_ResponseHeaders{
 					ResponseHeaders: &extproc.HeadersResponse{},
