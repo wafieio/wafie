@@ -15,8 +15,10 @@ discoveryAgent:
   image: dimssss/wafie-control-plane:latest
 
 # Application Security Gateway parameters
-appSecGw:
-  image: dimssss/wafie-appsecgw:latest
+gateway:
+  ads: dimssss/wafie-gateway:latest
+  proxy: envoyproxy/envoy:v1.36.2
+  xproc: docker.io/dimssss/wafie-xproc:latest
 
 # Relay parameters
 relay:

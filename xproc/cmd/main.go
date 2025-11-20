@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"os"
 )
@@ -21,26 +20,41 @@ var (
 		Use:   "start",
 		Short: "start gRPC server",
 		Run: func(cmd *cobra.Command, args []string) {
-			logger := logger.NewLogger()
-			addr := viper.GetString("listen-addr")
-			lis, err := net.Listen("tcp", addr)
-			if err != nil {
-				log.Fatalf("Failed to listen: %v", err)
-			}
-			s := grpc.NewServer()
-			extproc.RegisterExternalProcessorServer(s, processor.NewExternalProcessor(logger))
-			logger.Info("wafie external processor server listening", zap.String("address", addr))
-			if err := s.Serve(lis); err != nil {
-				log.Fatalf("Failed to serve: %v", err)
-			}
+			runServer()
 		},
 	}
 )
 
 func init() {
-	startCmd.PersistentFlags().StringP("listen-addr", "l", ":50051", "listen address")
-	viper.BindPFlag("listen-addr", startCmd.PersistentFlags().Lookup("listen-addr"))
+	startCmd.PersistentFlags().StringP("xproc-socket", "s",
+		"/var/run/wafie/xproc/socket", "wafie ext proc socket")
+	viper.BindPFlag("xproc-socket", startCmd.PersistentFlags().Lookup("xproc-socket"))
 	rootCmd.AddCommand(startCmd)
+}
+
+func runServer() {
+	l := logger.NewLogger()
+	socket := viper.GetString("xproc-socket")
+	if err := os.RemoveAll(socket); err != nil {
+		l.Error("failed to create listening unix socket", zap.String("socket", socket), zap.Error(err))
+		os.Exit(1)
+	}
+	lis, err := net.Listen("unix", socket)
+	if err != nil {
+		l.Error("failed to listen: %v", zap.Error(err))
+		os.Exit(1)
+	}
+	if err := os.Chmod(socket, 0666); err != nil {
+		l.Error("failed to chmod for a socket", zap.String("socket", socket), zap.Error(err))
+		os.Exit(1)
+	}
+	srv := grpc.NewServer()
+	extproc.RegisterExternalProcessorServer(srv, processor.NewExternalProcessor(l))
+	l.Info("wafie external processor server listening", zap.String("socket", socket))
+	if err := srv.Serve(lis); err != nil {
+		l.Error("failed to serve", zap.String("socket", socket), zap.Error(err))
+	}
+	defer os.Remove(socket)
 }
 
 func main() {

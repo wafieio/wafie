@@ -2,11 +2,11 @@ package controlplane
 
 import (
 	"fmt"
+	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	"time"
 
 	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
 	applogger "github.com/Dimss/wafie/logger"
-	golangv3alpha "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/golang/v3alpha"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -14,8 +14,10 @@ import (
 	v3listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	stream "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/stream/v3"
+	extproc "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	upstreams "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -26,13 +28,93 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
+const wafieExtProcClusterName = "wafie_xproc_cluster"
+
 type state struct {
-	logger *zap.Logger
+	xprocSocket string
+	logger      *zap.Logger
 }
 
-func newState() *state {
+func newState(xprocSocket string) *state {
 	return &state{
-		logger: applogger.NewLogger(),
+		xprocSocket: xprocSocket,
+		logger:      applogger.NewLogger(),
+	}
+}
+
+func (s *state) wafieXprocFilter() *extproc.ExternalProcessor {
+	return &extproc.ExternalProcessor{
+		GrpcService: &core.GrpcService{
+			TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+					ClusterName: wafieExtProcClusterName,
+				},
+			},
+		},
+		FailureModeAllow: false,
+		ProcessingMode: &extproc.ProcessingMode{
+			RequestHeaderMode:  extproc.ProcessingMode_SEND,
+			ResponseHeaderMode: extproc.ProcessingMode_SEND,
+			RequestBodyMode:    extproc.ProcessingMode_BUFFERED,
+			ResponseBodyMode:   extproc.ProcessingMode_NONE,
+		},
+		RequestAttributes: []string{
+			"request.protocol",
+			"request.method",
+			"request.path",
+			"source.address",
+		},
+		MutationRules: &mutation_rulesv3.HeaderMutationRules{
+			AllowAllRouting: &wrappers.BoolValue{Value: true},
+			AllowEnvoy:      &wrappers.BoolValue{Value: true},
+		},
+	}
+}
+
+func (s *state) wafieXprocCluster() *cluster.Cluster {
+	// Explicitly enforce HTTP/2 configuration
+	httpProtocolOptions, err := anypb.New(
+		&upstreams.HttpProtocolOptions{
+			UpstreamProtocolOptions: &upstreams.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &upstreams.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &upstreams.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{},
+				},
+			},
+		},
+	)
+	if err != nil {
+		s.logger.Error("error defining a cluster for wafie xproc filter", zap.Error(err))
+		return nil
+	}
+	return &cluster.Cluster{
+		Name:                 wafieExtProcClusterName,
+		ConnectTimeout:       durationpb.New(5 * time.Second),
+		ClusterDiscoveryType: &cluster.Cluster_Type{Type: cluster.Cluster_STATIC},
+		TypedExtensionProtocolOptions: map[string]*anypb.Any{
+			"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": httpProtocolOptions,
+		},
+		LoadAssignment: &endpoint.ClusterLoadAssignment{
+			ClusterName: wafieExtProcClusterName,
+			Endpoints: []*endpoint.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*endpoint.LbEndpoint{
+						{
+							HostIdentifier: &endpoint.LbEndpoint_Endpoint{
+								Endpoint: &endpoint.Endpoint{
+									Address: &core.Address{
+										Address: &core.Address_Pipe{
+											Pipe: &core.Pipe{
+												Path: s.xprocSocket,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -40,21 +122,16 @@ func (s *state) httpFilters(protection *wv1.Protection) []*hcm.HttpFilter {
 	var filters []*hcm.HttpFilter
 	// wafie modsec filter
 	if protection.DesiredState.ModeSec.ProtectionMode == wv1.ProtectionMode_PROTECTION_MODE_ON {
-		wafieLibCfg, err := anypb.New(&golangv3alpha.Config{
-			LibraryId:   "wafie-v1",
-			LibraryPath: "/usr/local/lib/wafie-modsec.so",
-			PluginName:  "wafie",
-		})
-		if err != nil {
-			s.logger.Error("failed to create wafie config", zap.Error(err))
+		if wafieExtProcFilter, err := anypb.New(s.wafieXprocFilter()); err == nil {
+			filters = append(filters, &hcm.HttpFilter{
+				Name: "envoy.filters.http.ext_proc",
+				ConfigType: &hcm.HttpFilter_TypedConfig{
+					TypedConfig: wafieExtProcFilter,
+				},
+			})
+		} else {
+			s.logger.Error("failed to create wafie ext proc filter", zap.Error(err))
 		}
-
-		filters = append(filters, &hcm.HttpFilter{
-			Name: "envoy.filters.http.golang",
-			ConfigType: &hcm.HttpFilter_TypedConfig{
-				TypedConfig: wafieLibCfg,
-			},
-		})
 	}
 	// http filter
 	routerConfig, err := anypb.New(&router.Router{})
@@ -248,7 +325,7 @@ func (s *state) clusters(protections []*wv1.Protection) (clusters []types.Resour
 		mirrorPolicy := protection.Application.Ingress[0].Upstream.MirrorPolicy
 		if mirrorPolicy != nil && mirrorPolicy.Status == wv1.MirrorPolicyStatus_MIRROR_POLICY_STATUS_ENABLED {
 			address := mirrorPolicy.Ip
-			// always use dns id set
+			// always use dns if set
 			if mirrorPolicy.Dns != "" {
 				address = mirrorPolicy.Dns
 			}
@@ -262,6 +339,8 @@ func (s *state) clusters(protections []*wv1.Protection) (clusters []types.Resour
 			clusters = append(clusters, mirroredCluster)
 		}
 	}
+	// add wafie ext proc cluster
+	clusters = append(clusters, s.wafieXprocCluster())
 	return clusters
 }
 

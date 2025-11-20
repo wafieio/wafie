@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wafie-gateway
+  namespace: {{.Release.Namespace}}
+  labels:
+    app: wafie-gateway
+spec:
+  selector:
+    matchLabels:
+      app: wafie-gateway
+  template:
+    metadata:
+      labels:
+        app: wafie-gateway
+    spec:
+      serviceAccountName: wafie-gateway
+      containers:
+        - name: proxy
+          image: {{.Values.gateway.proxy}}
+          args:
+            - -c
+            - /config/config.yaml
+          volumeMounts:
+            - mountPath: /config
+              name: proxy-config
+            - mountPath: /var/run/wafie/xproc
+              name: xproc-socket
+          ports:
+            - containerPort: 8001
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8001
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 8001
+        - name: proxy-ads
+          image: {{.Values.gateway.ads }}
+          command:
+            - /usr/local/bin/gateway
+            - start
+            - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.controlPlane.svc.name .Release.Namespace (.Values.controlPlane.svc.port | int)) }}
+          volumeMounts:
+            - mountPath: /data/audit
+              name: gateway-audit-data
+          readinessProbe:
+            grpc:
+              port: 8082
+          livenessProbe:
+            grpc:
+              port: 8082
+        - name: proxy-xproc
+          image: {{.Values.gateway.xproc}}
+          command: []
+          volumeMounts:
+            - name: xproc-socket
+              mountPath: /var/run/wafie/xproc
+            - name: gateway-audit-data
+              mountPath: /data/audit
+        - name: fluent-bit
+          image: cr.fluentbit.io/fluent/fluent-bit:4.0.3
+          imagePullPolicy: IfNotPresent
+          args:
+            - -c
+            - /fluent-bit/etc/fluent-bit.yaml
+          volumeMounts:
+            - mountPath: /data/audit
+              name: gateway-audit-data
+            - mountPath: /fluent-bit/etc/fluent-bit.yaml
+              name: fluent-bit-config
+              subPath: fluent-bit.yaml
+      volumes:
+        - name: gateway-audit-data
+          emptyDir: { }
+        - name: xproc-socket
+          emptyDir: { }
+        - name: fluent-bit-config
+          configMap:
+            name: fluent-bit-config
+        - name: proxy-config
+          configMap:
+            name: wafie-proxy-config
+
+
+

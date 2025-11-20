@@ -40,10 +40,10 @@ type EnvoyControlPlane struct {
 	stateVersionSvcClient wafiev1connect.StateVersionServiceClient
 }
 
-func NewEnvoyControlPlane(apiAddr, namespace string) *EnvoyControlPlane {
+func NewEnvoyControlPlane(apiAddr, namespace, xprocSocket string) *EnvoyControlPlane {
 
 	cp := &EnvoyControlPlane{
-		state:       newState(),
+		state:       newState(xprocSocket),
 		logger:      applogger.NewLogger(),
 		resourcesCh: make(chan map[resource.Type][]types.Resource, 1),
 		namespace:   namespace,

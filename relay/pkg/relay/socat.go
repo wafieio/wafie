@@ -238,23 +238,17 @@ func (r *SocatRelay) stopInternal() {
 	if r.cmd == nil || r.cmd.Process == nil {
 		// un-program nft
 		_ = ProgramNft(DeleteOp, r.options)
-		//return fmt.Errorf("socat not running")
 	}
-
 	pid := r.cmd.Process.Pid
-	//fmt.Printf("Stopping socat process group with PGID: %d\n", pid)
-
 	// Kill the entire process group
 	if err := syscall.Kill(-r.cmd.Process.Pid, syscall.SIGTERM); err != nil {
 		fmt.Printf("Failed to send SIGTERM to process group: %v\n", err)
 	}
-
 	// Wait for graceful shutdown
 	done := make(chan error, 1)
 	go func() {
 		done <- r.cmd.Wait()
 	}()
-
 	select {
 	case err := <-done:
 		fmt.Println("Socat stopped gracefully")

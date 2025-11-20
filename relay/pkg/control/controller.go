@@ -128,7 +128,7 @@ func (c *Controller) discoverRelayOptions(p *wv1.Protection) (*wv1.RelayOptions,
 		return &wv1.RelayOptions{}, err
 	}
 	return &wv1.RelayOptions{
-		ProxyFqdn:          "appsecgw.default.svc", // TODO: parameterize this!
+		ProxyFqdn:          "wafie-gateway.default.svc", // TODO: parameterize this!
 		ProxyListeningPort: strconv.Itoa(int(port.ProxyListeningPort)),
 		AppContainerPort:   strconv.Itoa(int(port.Number)),
 		RelayPort:          "50010", // TODO: currently static-inline, must be configurable

@@ -25,3 +25,8 @@ COPY --from=libwafie /wafie/build/test_hello /usr/local/bin/test_hello
 COPY xproc/pkg/modsec/config/ /config
 COPY xproc/pkg/modsec/include/ /usr/local/include
 RUN ldconfig
+ADD go.mod go.sum Makefile ./
+ADD xproc ./xproc
+ADD logger ./logger
+RUN go build -o /usr/local/bin/xproc xproc/cmd/main.go
+CMD ["/usr/local/bin/xproc", "start"]

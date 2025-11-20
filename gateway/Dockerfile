@@ -1,6 +1,7 @@
 FROM bufbuild/buf AS protobuf-builder
 WORKDIR /app
 ADD ../api ./api
+ADD ../Makefile ./
 RUN cd api \
     && buf dep update \
     && buf lint \
@@ -8,19 +9,17 @@ RUN cd api \
 
 FROM golang:1.25.4-bookworm AS builder
 WORKDIR /app
-COPY ../logger ./logger
 COPY ../go.mod go.sum ./
-COPY ../Makefile Makefile
+COPY ../Makefile ./
 COPY --from=protobuf-builder /app/api ./api
-COPY relay/cmd/ relay/cmd
-COPY relay/pkg relay/pkg
-RUN make relay
+COPY apisrv apisrv
+COPY gateway ./gateway/
+COPY logger ./logger
+RUN make gateway
 
 FROM debian:bookworm-slim
-RUN apt -y update \
-    && apt -y install \
-              socat \
-              nftables
-COPY --from=builder /app/.bin/wafie-relay /usr/local/bin/wafie-relay
-
-
+COPY --from=builder /app/.bin/gateway /usr/local/bin/gateway
+RUN apt update -y \
+    && apt install -y \
+       logrotate
+CMD ["/usr/local/bin/gateway", "start"]

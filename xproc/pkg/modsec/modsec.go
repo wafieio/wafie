@@ -24,7 +24,7 @@ func NewModSec(logger *zap.Logger) *ModeSec {
 	return &ModeSec{logger: logger}
 }
 
-func (s *ModeSec) FreeEvaluationRequest(evalRequest C.EvaluationRequest) {
+func (s *ModeSec) DestroyEvaluationRequest(evalRequest C.EvaluationRequest) {
 	C.free(unsafe.Pointer(evalRequest.client_ip))
 	C.free(unsafe.Pointer(evalRequest.uri))
 	C.free(unsafe.Pointer(evalRequest.http_method))
@@ -39,7 +39,7 @@ func (s *ModeSec) FreeEvaluationRequest(evalRequest C.EvaluationRequest) {
 	C.free(unsafe.Pointer(evalRequest.headers))
 }
 
-func (s *ModeSec) EnvoyProcessingToEvalRequest(
+func (s *ModeSec) InitEvalRequest(
 	envoyProcessingAttributes map[string]*structpb.Value,
 	hdrs []*corev3.HeaderValue) (evalRequest C.EvaluationRequest) {
 	attributes := map[string]string{
@@ -102,7 +102,7 @@ func (s *ModeSec) getAuthorityHeader(hdrs []*corev3.HeaderValue) []byte {
 	return []byte{}
 }
 
-func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) {
+func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) (intervened bool) {
 	C.wafie_init_request_transaction(&evalRequest)
 	s.logger.Info("new evaluation request",
 		zap.Any("client_ip", evalRequest.client_ip),
@@ -114,5 +114,11 @@ func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) {
 	)
 	if C.wafie_process_request_headers(&evalRequest) != 0 {
 		s.logger.Info(" ########################## violation on headers ##########################")
+		return true
 	}
+	if C.wafie_process_request_body(&evalRequest) != 0 {
+		s.logger.Info(" ########################## violation on headers (body) ##########################")
+		return true
+	}
+	return false
 }

@@ -14,19 +14,24 @@ build.cp.image:
 	podman push docker.io/dimssss/wafie-control-plane
 
 
-# AppSecGw build
-build.appsecgw:
+# gateway build
+.PHONY: gateway
+gateway:
 	go build \
-		-ldflags="-X 'github.com/Dimss/wafie/appsecgw/cmd.Build=$$(git rev-parse --short HEAD)'" \
-		-o .bin/appsecgw appsecgw/cmd/main.go
+		-ldflags="-X 'github.com/Dimss/wafie/gateway/cmd.Build=$$(git rev-parse --short HEAD)'" \
+		-o .bin/gateway gateway/cmd/main.go
 
-build.appsecgw.image:
-	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-appsecgw --platform linux/arm64 -f appsecgw/Dockerfile .
-	podman push docker.io/dimssss/wafie-appsecgw
+gateway.image:
+	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-gateway --platform linux/arm64 -f gateway/Dockerfile .
+	podman push docker.io/dimssss/wafie-gateway
 
-build.appsecgw.image.dev:
-	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-appsecgw-dev --platform linux/arm64 -f appsecgw/Dockerfile.dev .
-	podman push docker.io/dimssss/wafie-appsecgw-dev
+gateway.image.dev:
+	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-gateway-dev --platform linux/arm64 -f gateway/Dockerfile.dev .
+	podman push docker.io/dimssss/wafie-gateway-dev
+
+.PHONY: xproc
+xproc:
+	go build -o .bin/xproc xproc/cmd/main.go
 
 xproc.image:
 	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-xproc --platform linux/arm64 -f xproc/Containerfile .
@@ -40,10 +45,11 @@ build.discovery:
       -o .bin/discovery-agent discovery/cmd/discovery/main.go
 
 # Relay build
-build.relay:
+.PHONY: relay
+relay:
 	go build -o .bin/wafie-relay relay/cmd/main.go
 
-build.relay.image:
+relay.image:
 	podman buildx build -t docker.io/dimssss/wafie-relay --platform linux/arm64 -f relay/Containerfile .
 	podman push docker.io/dimssss/wafie-relay
 

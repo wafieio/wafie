@@ -13,11 +13,13 @@ import (
 
 type ExternalProcessor struct {
 	logger *zap.Logger
+	modsec *modsec.ModeSec
 	extproc.UnimplementedExternalProcessorServer
 }
 
 func NewExternalProcessor(logger *zap.Logger) *ExternalProcessor {
 	return &ExternalProcessor{
+		modsec: modsec.NewModSec(logger),
 		logger: logger,
 	}
 }
@@ -45,48 +47,25 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		switch r := req.Request.(type) {
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
-			//evalRequest := modsec.NewEvaluationRequest()
-			modSec := modsec.NewModSec(s.logger)
-			evalRequest := modSec.EnvoyProcessingToEvalRequest(
+
+			// init eval request
+			evalRequest := s.modsec.InitEvalRequest(
 				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
 				r.RequestHeaders.Headers.Headers,
 			)
-			modSec.EvaluateHeaders(evalRequest)
-			modSec.FreeEvaluationRequest(evalRequest)
-
-			//attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
-
-			//for _, attribute := range attributes {
-			//	if attrVal, ok := req.Attributes["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
-			//		s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
-			//	}
-			//}
-			//for attrName, attrValue := range req.Attributes {
-			//	s.logger.Info("request attributes",
-			//		zap.String(attrName, attrValue.String()))
-			//}
-			//if val, ok := req.Attributes[attrName]; ok {
-			//	s.logger.Info("request attributes",
-			//		zap.String("path", attr.String()))
-			//}
-			//}
-
-			//modsec.EvaluationRequestHeaders(r.RequestHeaders.Headers.Headers)
-			//for _, header := range r.RequestHeaders.Headers.Headers {
-			//	if header.Key == "foo" {
-			//		if err := stream.Send(immediateResponse()); err != nil {
-			//			fmt.Println(err)
-			//
-			//		}
-			//		return nil
-			//	}
-			//
-			//}
-
-			resp = &extproc.ProcessingResponse{
-				Response: &extproc.ProcessingResponse_RequestHeaders{
-					RequestHeaders: &extproc.HeadersResponse{},
-				},
+			// process transaction
+			intervened := s.modsec.EvaluateHeaders(evalRequest)
+			// cleanup (free) evaluation request
+			s.modsec.DestroyEvaluationRequest(evalRequest)
+			// if intervened, block request
+			if intervened {
+				resp = interventionResponse()
+			} else {
+				resp = &extproc.ProcessingResponse{
+					Response: &extproc.ProcessingResponse_RequestHeaders{
+						RequestHeaders: &extproc.HeadersResponse{},
+					},
+				}
 			}
 
 		case *extproc.ProcessingRequest_ResponseHeaders:
@@ -121,7 +100,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 	}
 }
 
-func immediateResponse() *extproc.ProcessingResponse {
+func interventionResponse() *extproc.ProcessingResponse {
 	body := "blocked by wafie.io"
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{

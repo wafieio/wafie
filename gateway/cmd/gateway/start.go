@@ -1,4 +1,4 @@
-package cmd
+package gateway
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"syscall"
 
 	hsrv "github.com/Dimss/wafie/apisrv/pkg/healthchecksrv"
-	"github.com/Dimss/wafie/appsecgw/pkg/controlplane"
+	"github.com/Dimss/wafie/gateway/pkg/controlplane"
 	"github.com/Dimss/wafie/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,17 +16,16 @@ import (
 func init() {
 	startCmd.PersistentFlags().StringP("api-addr", "a", "http://localhost:8080", "API address")
 	startCmd.PersistentFlags().StringP("namespace", "n", "default", "K8s namespace")
-	startCmd.PersistentFlags().BoolP("envoy-xds-srv-only", "e", false,
-		"Set to true to run only xds, without starting envoy instance")
+	startCmd.PersistentFlags().StringP("xproc-socket", "s", "/var/run/wafie/xproc/socket", "Wafie ext proc socket")
 	viper.BindPFlag("api-addr", startCmd.PersistentFlags().Lookup("api-addr"))
 	viper.BindPFlag("namespace", startCmd.PersistentFlags().Lookup("namespace"))
-	viper.BindPFlag("envoy-xds-srv-only", startCmd.PersistentFlags().Lookup("envoy-xds-srv-only"))
+	viper.BindPFlag("xproc-socket", startCmd.PersistentFlags().Lookup("xproc-socket"))
 	rootCmd.AddCommand(startCmd)
 }
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Wafie AppSec Gateway control plane envoy gRPC server",
+	Short: "Wafie Application Security Gateway -  Envoy Control Plane grpc server",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logger.NewLogger()
 		// start health check server
@@ -38,6 +37,7 @@ var startCmd = &cobra.Command{
 			NewEnvoyControlPlane(
 				viper.GetString("api-addr"),
 				viper.GetString("namespace"),
+				viper.GetString("xproc-socket"),
 			).Start()
 
 		if !viper.GetBool("envoy-xds-srv-only") {
