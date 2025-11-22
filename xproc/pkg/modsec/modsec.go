@@ -14,9 +14,11 @@ import (
 	"unsafe"
 )
 
+type EvalRequest C.EvaluationRequest
+
 type ModeSec struct {
-	evalRequest C.EvaluationRequest
-	logger      *zap.Logger
+	//evalRequest C.EvaluationRequest
+	logger *zap.Logger
 }
 
 func NewModSec(logger *zap.Logger) *ModeSec {
@@ -25,7 +27,10 @@ func NewModSec(logger *zap.Logger) *ModeSec {
 	return &ModeSec{logger: logger}
 }
 
-func (s *ModeSec) DestroyEvaluationRequest(evalRequest C.EvaluationRequest) {
+func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
+	// log and cleanup transaction
+	C.wafie_transaction_cleanup((*C.EvaluationRequest)(evalRequest))
+	// free allocated evaluation request
 	C.free(unsafe.Pointer(evalRequest.client_ip))
 	C.free(unsafe.Pointer(evalRequest.uri))
 	C.free(unsafe.Pointer(evalRequest.http_method))
@@ -42,7 +47,8 @@ func (s *ModeSec) DestroyEvaluationRequest(evalRequest C.EvaluationRequest) {
 
 func (s *ModeSec) InitEvalRequest(
 	envoyProcessingAttributes map[string]*structpb.Value,
-	hdrs []*corev3.HeaderValue) (evalRequest C.EvaluationRequest) {
+	hdrs []*corev3.HeaderValue) *EvalRequest {
+	evalRequest := EvalRequest{}
 	attributes := map[string]string{
 		"request.path":     "",
 		"source.address":   "",
@@ -86,7 +92,11 @@ func (s *ModeSec) InitEvalRequest(
 			headerPtr.value = (*C.uchar)(unsafe.Pointer(C.CString(string(hdr.RawValue))))
 		}
 	}
-	return evalRequest
+	return &evalRequest
+}
+
+func (s *ModeSec) SetEvalRequestBody(body string, evalRequest *EvalRequest) {
+	evalRequest.body = C.CString(body)
 }
 
 func (s *ModeSec) getHttpProtocolVersion(protocol string) string {
@@ -106,8 +116,8 @@ func (s *ModeSec) getAuthorityHeader(hdrs []*corev3.HeaderValue) []byte {
 	return []byte{}
 }
 
-func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) (intervened bool) {
-	C.wafie_init_request_transaction(&evalRequest)
+func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
+	C.wafie_init_request_transaction((*C.EvaluationRequest)(evalRequest))
 	s.logger.Info("new evaluation request",
 		zap.Any("client_ip", evalRequest.client_ip),
 		zap.Any("uri", evalRequest.uri),
@@ -117,12 +127,20 @@ func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) (intervened b
 		zap.Any("headers", evalRequest.headers),
 	)
 
-	if C.wafie_process_request_headers(&evalRequest) != 0 {
-		s.logger.Info(" ########################## violation on headers ##########################")
+	if C.wafie_process_request_headers((*C.EvaluationRequest)(evalRequest)) != 0 {
+		s.logger.Debug("intervention on headers evaluation")
 		return true
 	}
-	if C.wafie_process_request_body(&evalRequest) != 0 {
-		s.logger.Info(" ########################## violation on headers (body) ##########################")
+	if C.wafie_process_request_body((*C.EvaluationRequest)(evalRequest)) != 0 {
+		s.logger.Debug("intervention on body evaluation")
+		return true
+	}
+	return false
+}
+
+func (s *ModeSec) EvaluateBody(evalRequest *EvalRequest) (intervened bool) {
+	if C.wafie_process_request_body((*C.EvaluationRequest)(evalRequest)) != 0 {
+		s.logger.Debug("intervention on body evaluation")
 		return true
 	}
 	return false

@@ -1,10 +1,5 @@
 package processor
 
-/*
-#cgo LDFLAGS: -lwafie
-#include <stdlib.h>
-#include <wafie/wafielib.h>
-*/
 import "C"
 import (
 	"github.com/Dimss/wafie/xproc/pkg/modsec"
@@ -40,11 +35,16 @@ func (s *ExternalProcessor) requestAttributes(requestAttr map[string]*structpb.S
 }
 
 func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServer) error {
+	var evalRequest *modsec.EvalRequest
+	defer func() {
+		if evalRequest != nil {
+			s.modsec.DestroyTransaction(evalRequest)
+		}
+	}()
+
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			// cleanup (free) evaluation request
-			s.modsec.DestroyEvaluationRequest(&s.evalRequest)
 			return nil
 		}
 		if err != nil {
@@ -53,16 +53,16 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 
 		var resp *extproc.ProcessingResponse
 		switch r := req.Request.(type) {
+		// Request Headers Evaluation
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
 			// init eval request
-			s.evalRequest = s.modsec.InitEvalRequest(
+			evalRequest = s.modsec.InitEvalRequest(
 				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
 				r.RequestHeaders.Headers.Headers,
 			)
 			// process transaction
-			intervened := s.modsec.EvaluateHeaders(s.evalRequest)
-
+			intervened := s.modsec.EvaluateHeaders(evalRequest)
 			// if intervened, block request
 			if intervened {
 				resp = interventionResponse()
@@ -73,32 +73,33 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 					},
 				}
 			}
-
 		case *extproc.ProcessingRequest_ResponseHeaders:
-			log.Println("Processing response headers")
-
 			resp = &extproc.ProcessingResponse{
 				Response: &extproc.ProcessingResponse_ResponseHeaders{
 					ResponseHeaders: &extproc.HeadersResponse{},
 				},
 			}
-
+		// Request Body Evaluation
 		case *extproc.ProcessingRequest_RequestBody:
 			log.Println("Processing request body")
-
-			resp = &extproc.ProcessingResponse{
-				Response: &extproc.ProcessingResponse_RequestBody{
-					RequestBody: &extproc.BodyResponse{},
-				},
+			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalRequest)
+			intervened := s.modsec.EvaluateBody(evalRequest)
+			if intervened {
+				resp = interventionResponse()
+			} else {
+				resp = &extproc.ProcessingResponse{
+					Response: &extproc.ProcessingResponse_RequestBody{
+						RequestBody: &extproc.BodyResponse{},
+					},
+				}
 			}
-
 		case *extproc.ProcessingRequest_ResponseBody:
-			log.Println("Processing response body")
 			resp = &extproc.ProcessingResponse{
 				Response: &extproc.ProcessingResponse_ResponseBody{
 					ResponseBody: &extproc.BodyResponse{},
 				},
 			}
+
 		}
 
 		if err := stream.Send(resp); err != nil {
