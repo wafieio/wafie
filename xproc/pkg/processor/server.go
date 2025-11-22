@@ -2,6 +2,7 @@ package processor
 
 import "C"
 import (
+	"github.com/Dimss/wafie/xproc/pkg/assets"
 	"github.com/Dimss/wafie/xproc/pkg/modsec"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
@@ -15,12 +16,14 @@ import (
 type ExternalProcessor struct {
 	logger *zap.Logger
 	modsec *modsec.ModeSec
+	assets *assets.Assets
 	extproc.UnimplementedExternalProcessorServer
 }
 
 func NewExternalProcessor(logger *zap.Logger) *ExternalProcessor {
 	return &ExternalProcessor{
 		modsec: modsec.NewModSec(logger),
+		assets: assets.New(logger),
 		logger: logger,
 	}
 }
@@ -65,7 +68,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			intervened := s.modsec.EvaluateHeaders(evalRequest)
 			// if intervened, block request
 			if intervened {
-				resp = interventionResponse()
+				resp = s.interventionResponse()
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestHeaders{
@@ -85,7 +88,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalRequest)
 			intervened := s.modsec.EvaluateBody(evalRequest)
 			if intervened {
-				resp = interventionResponse()
+				resp = s.interventionResponse()
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestBody{
@@ -108,8 +111,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 	}
 }
 
-func interventionResponse() *extproc.ProcessingResponse {
-	body := "blocked by wafie.io"
+func (s *ExternalProcessor) interventionResponse() *extproc.ProcessingResponse {
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{
 			ImmediateResponse: &extproc.ImmediateResponse{
@@ -124,7 +126,7 @@ func interventionResponse() *extproc.ProcessingResponse {
 						},
 					},
 				},
-				Body: []byte(body),
+				Body: s.assets.BlockPage(),
 			},
 		},
 	}

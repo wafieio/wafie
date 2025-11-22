@@ -17,14 +17,16 @@ import (
 type EvalRequest C.EvaluationRequest
 
 type ModeSec struct {
-	//evalRequest C.EvaluationRequest
 	logger *zap.Logger
 }
 
 func NewModSec(logger *zap.Logger) *ModeSec {
 	// init modsecurity library
 	C.wafie_library_init(C.CString("/config"))
-	return &ModeSec{logger: logger}
+	// init mod sec instance
+	return &ModeSec{
+		logger: logger,
+	}
 }
 
 func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {

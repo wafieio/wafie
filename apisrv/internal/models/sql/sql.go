@@ -2,7 +2,7 @@ package sql
 
 import "embed"
 
-// Embed static web assets
+// Embed sql migration files
 //
 //go:embed *.sql
 var sql embed.FS
