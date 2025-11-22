@@ -4,8 +4,8 @@ dev:
   app:
     workingDir: /go/src/github.com/Dimss/wafie
     labelSelector:
-      app: "wafie-xproc"
-    container: grpc-server
+      app: "wafie-gateway"
+    container: proxy-xproc
     devImage: docker.io/dimssss/wafie-xproc
     sync:
       - path: ./:./

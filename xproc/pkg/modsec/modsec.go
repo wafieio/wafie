@@ -15,7 +15,8 @@ import (
 )
 
 type ModeSec struct {
-	logger *zap.Logger
+	evalRequest C.EvaluationRequest
+	logger      *zap.Logger
 }
 
 func NewModSec(logger *zap.Logger) *ModeSec {
@@ -67,6 +68,9 @@ func (s *ModeSec) InitEvalRequest(
 	evalRequest.headers = (*C.EvaluationRequestHeader)(
 		C.malloc(C.size_t(unsafe.Sizeof(C.EvaluationRequestHeader{})) * C.size_t(headersCount)),
 	)
+	//if body not set to empty string,
+	//it will be NULL and will be skipped from evaluation
+	evalRequest.body = C.CString("")
 
 	for idx, hdr := range hdrs {
 		headerPtr := (*C.EvaluationRequestHeader)(
@@ -112,6 +116,7 @@ func (s *ModeSec) EvaluateHeaders(evalRequest C.EvaluationRequest) (intervened b
 		zap.Any("headers_count", evalRequest.headers_count),
 		zap.Any("headers", evalRequest.headers),
 	)
+
 	if C.wafie_process_request_headers(&evalRequest) != 0 {
 		s.logger.Info(" ########################## violation on headers ##########################")
 		return true

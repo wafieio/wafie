@@ -1,5 +1,11 @@
 package processor
 
+/*
+#cgo LDFLAGS: -lwafie
+#include <stdlib.h>
+#include <wafie/wafielib.h>
+*/
+import "C"
 import (
 	"github.com/Dimss/wafie/xproc/pkg/modsec"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -37,6 +43,8 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
+			// cleanup (free) evaluation request
+			s.modsec.DestroyEvaluationRequest(&s.evalRequest)
 			return nil
 		}
 		if err != nil {
@@ -47,16 +55,14 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		switch r := req.Request.(type) {
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
-
 			// init eval request
-			evalRequest := s.modsec.InitEvalRequest(
+			s.evalRequest = s.modsec.InitEvalRequest(
 				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
 				r.RequestHeaders.Headers.Headers,
 			)
 			// process transaction
-			intervened := s.modsec.EvaluateHeaders(evalRequest)
-			// cleanup (free) evaluation request
-			s.modsec.DestroyEvaluationRequest(evalRequest)
+			intervened := s.modsec.EvaluateHeaders(s.evalRequest)
+
 			// if intervened, block request
 			if intervened {
 				resp = interventionResponse()
@@ -79,6 +85,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 
 		case *extproc.ProcessingRequest_RequestBody:
 			log.Println("Processing request body")
+
 			resp = &extproc.ProcessingResponse{
 				Response: &extproc.ProcessingResponse_RequestBody{
 					RequestBody: &extproc.BodyResponse{},
