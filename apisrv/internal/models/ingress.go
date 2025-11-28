@@ -12,21 +12,21 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type IngressModelSvc struct {
+type IngressRepository struct {
 	db      *gorm.DB
 	logger  *zap.Logger
 	Ingress Ingress
 }
 
-func NewIngressModelSvc(tx *gorm.DB, logger *zap.Logger) *IngressModelSvc {
-	modelSvc := &IngressModelSvc{db: tx, logger: logger}
+func NewIngressRepository(tx *gorm.DB, logger *zap.Logger) *IngressRepository {
+	repo := &IngressRepository{db: tx, logger: logger}
 	if tx == nil {
-		modelSvc.db = db()
+		repo.db = db()
 	}
 	if logger == nil {
-		modelSvc.logger = applogger.NewLogger()
+		repo.logger = applogger.NewLogger()
 	}
-	return modelSvc
+	return repo
 }
 
 type Ingress struct {
@@ -61,7 +61,7 @@ func NewIngressFromProto(ingReq *wv1.Ingress) *Ingress {
 	}
 }
 
-func (s *IngressModelSvc) Save(ingress *Ingress) error {
+func (s *IngressRepository) Save(ingress *Ingress) error {
 	if res := s.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "host"}},
 		DoUpdates: clause.AssignmentColumns(

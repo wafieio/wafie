@@ -105,6 +105,21 @@ func (p *Protection) ToProto() *wv1.Protection {
 	return protection
 }
 
+func (p *Protection) AfterCreate(tx *gorm.DB) error {
+	crsRepo := NewCrsRepository(tx, nil)
+	crsVersion := &CrsVersion{
+		Name:         DefaultCrsVersionName,
+		Active:       1,
+		Version:      DefaultCrsVersion,
+		ProtectionID: p.ID,
+	}
+	if err := crsRepo.CreateCrsVersion(crsVersion); err != nil {
+		return err
+	}
+
+	return crsRepo.CloneCrsProfileToCrsRuleSet(DefaultCRSProfileName, crsVersion.ID)
+}
+
 func (s *ProtectionRepository) CreateProtection(req *wv1.CreateProtectionRequest) (*Protection, error) {
 	protection := &Protection{
 		ApplicationID: uint(req.ApplicationId),

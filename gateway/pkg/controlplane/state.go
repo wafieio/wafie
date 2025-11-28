@@ -3,6 +3,7 @@ package controlplane
 import (
 	"fmt"
 	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
+	"strconv"
 	"time"
 
 	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
@@ -183,7 +184,20 @@ func (s *state) routes(protection *wv1.Protection) []*route.Route {
 		Action: &route.Route_Route{
 			Route: routeAction,
 		},
+		RequestHeadersToAdd: s.identifyingHeaders(protection),
 	})
+}
+
+func (s *state) identifyingHeaders(protection *wv1.Protection) []*core.HeaderValueOption {
+	return []*core.HeaderValueOption{
+		{
+			Header: &core.HeaderValue{
+				Key:      "x-wafie-protection-id",
+				RawValue: []byte(strconv.FormatUint(uint64(protection.Id), 10)),
+			},
+			AppendAction: core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+		},
+	}
 }
 
 func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConnectionManager {

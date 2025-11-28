@@ -40,11 +40,11 @@ func (s *RouteService) CreateRoute(
 	// save ingress
 	i := models.NewIngressFromProto(req.Msg.Ingress)
 	i.UpstreamID = u.ID // set foreign key upstream id
-	if err := models.NewIngressModelSvc(nil, s.logger).Save(i); err != nil {
+	if err := models.NewIngressRepository(nil, s.logger).Save(i); err != nil {
 		return connect.NewResponse(&wv1.CreateRouteResponse{}), err
 	}
 	// save ports
-	err = models.NewPortModelSvc(u.ID, i.ID, nil, s.logger).
+	err = models.NewPortRepository(u.ID, i.ID, nil, s.logger).
 		Save(models.NewPortsFromProto(req.Msg.Ports))
 	return connect.NewResponse(&wv1.CreateRouteResponse{}), err
 }
@@ -62,7 +62,7 @@ func (s *RouteService) UpdateRoute(
 	if err != nil {
 		return connect.NewResponse(&wv1.UpdateRouteResponse{}), connect.NewError(connect.CodeInternal, err)
 	}
-	//models.NewPortModelSvc(nil, s.logger)
+	//models.NewPortRepository(nil, s.logger)
 	return connect.NewResponse(&wv1.UpdateRouteResponse{}), nil
 }
 

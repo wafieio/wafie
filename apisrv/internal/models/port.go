@@ -30,7 +30,7 @@ type Port struct {
 	UpdatedAt          time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 }
 
-type PortSvc struct {
+type PortRepository struct {
 	db         *gorm.DB
 	logger     *zap.Logger
 	upstreamId string
@@ -38,8 +38,8 @@ type PortSvc struct {
 	Port       Port
 }
 
-func NewPortModelSvc(uId string, iId uint, tx *gorm.DB, logger *zap.Logger) *PortSvc {
-	modelSvc := &PortSvc{
+func NewPortRepository(uId string, iId uint, tx *gorm.DB, logger *zap.Logger) *PortRepository {
+	modelSvc := &PortRepository{
 		db:         tx,
 		logger:     logger,
 		upstreamId: uId,
@@ -54,7 +54,7 @@ func NewPortModelSvc(uId string, iId uint, tx *gorm.DB, logger *zap.Logger) *Por
 	return modelSvc
 }
 
-func (s *PortSvc) Save(desiredPorts []Port) error {
+func (s *PortRepository) Save(desiredPorts []Port) error {
 	if len(desiredPorts) == 0 {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (s *PortSvc) Save(desiredPorts []Port) error {
 	return nil
 }
 
-func (s *PortSvc) deleteUnexistingPorts(desiredPorts []Port) error {
+func (s *PortRepository) deleteUnexistingPorts(desiredPorts []Port) error {
 	if len(desiredPorts) == 0 {
 		return nil
 	}
@@ -120,7 +120,7 @@ func (s *PortSvc) deleteUnexistingPorts(desiredPorts []Port) error {
 	return nil
 }
 
-func (s *PortSvc) currentPorts() (ports []*Port, err error) {
+func (s *PortRepository) currentPorts() (ports []*Port, err error) {
 	query := s.db.Model(&Port{})
 	query = query.
 		//Joins("JOIN upstreams ON upstreams.id = ports.upstream_id").
