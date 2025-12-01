@@ -47,7 +47,7 @@ func (s *ProtectionService) GetProtection(
 	l.Info("getting protection entry")
 	defer l.Info("protection entry retrieved")
 	repo := models.NewProtectionRepository(nil, l)
-	protection, err := repo.GetProtection(req.Msg)
+	protection, err := repo.GetProtection(uint(req.Msg.GetId()), req.Msg.GetOptions())
 	if err != nil {
 		l.Error("failed to get protection entry", zap.Error(err))
 		return connect.NewResponse(&wv1.GetProtectionResponse{}), err

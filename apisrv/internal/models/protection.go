@@ -34,6 +34,7 @@ type Protection struct {
 	Mode          uint32                 `gorm:"default:0"`
 	ApplicationID uint                   `gorm:"not null;uniqueIndex:idx_protection_app_id"`
 	Application   Application            `gorm:"foreignKey:ApplicationID;references:ID"`
+	CrsVersions   []CrsVersion           `gorm:"foreignKey:ProtectionID;references:ID"`
 	DesiredState  ProtectionDesiredState `gorm:"type:jsonb"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -102,6 +103,10 @@ func (p *Protection) ToProto() *wv1.Protection {
 	if p.Application.ID != 0 {
 		protection.Application = p.Application.ToProto()
 	}
+	for _, crsVersion := range p.CrsVersions {
+		protection.CrsVersions = append(protection.CrsVersions, crsVersion.ToProto())
+	}
+
 	return protection
 }
 
@@ -109,7 +114,7 @@ func (p *Protection) AfterCreate(tx *gorm.DB) error {
 	crsRepo := NewCrsRepository(tx, nil)
 	crsVersion := &CrsVersion{
 		Name:         DefaultCrsVersionName,
-		Active:       1,
+		Status:       uint32(wv1.CrsVersionStatus_CRS_VERSION_STATUS_ACTIVE),
 		Version:      DefaultCrsVersion,
 		ProtectionID: p.ID,
 	}
@@ -132,15 +137,27 @@ func (s *ProtectionRepository) CreateProtection(req *wv1.CreateProtectionRequest
 	return protection, nil
 }
 
-func (s *ProtectionRepository) GetProtection(req *wv1.GetProtectionRequest) (*Protection, error) {
-	protection := &Protection{ID: uint(req.GetId())}
-	err := s.db.First(protection).Error
+func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtectionOptions) (*Protection, error) {
+	p := &Protection{}
+	query := s.db.Model(&Protection{ID: id})
+	allRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ALL
+	activeRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ACTIVE
+	if options != nil && options.IncludeCrsRules != nil {
+		if *options.IncludeCrsRules == allRules {
+			query.Preload("CrsVersions.CrsRuleSets")
+		}
+		if *options.IncludeCrsRules == activeRules {
+			query.Preload("CrsVersions", "status = ?", activeRules).
+				Preload("CrsVersions.CrsRuleSets")
+		}
+	}
+	err := query.Find(p).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("protection not found"))
 	} else if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return protection, nil
+	return p, nil
 }
 
 func (s *ProtectionRepository) UpdateProtection(req *wv1.PutProtectionRequest) (*Protection, error) {
@@ -177,7 +194,7 @@ func (s *ProtectionRepository) UpdateProtection(req *wv1.PutProtectionRequest) (
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("protection id not found"))
 	}
 
-	return s.GetProtection(&wv1.GetProtectionRequest{Id: uint32(protection.ID)})
+	return s.GetProtection(protection.ID, nil)
 }
 
 func (s *ProtectionRepository) ListProtections(options *wv1.ListProtectionsOptions) ([]*Protection, error) {

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package wafie.v1;
+
+enum CrsVersionStatus {
+  CRS_VERSION_STATUS_UNSPECIFIED = 0;
+  CRS_VERSION_STATUS_ACTIVE = 1;
+  CRS_VERSION_STATUS_INACTIVE = 2;
+}
+
+message CrsProfile {
+  string version = 1;
+  string name = 2;
+  string crs_file_name = 3;
+  string crs_file_content = 4;
+}
+
+message CrsVersion {
+  uint32 id = 1;
+  string name = 2;
+  CrsVersionStatus status = 3;
+  uint32 protection_id = 4;
+  repeated CrsRuleSet crs_rule_sets = 5;
+}
+
+message CrsRuleSet {
+  uint32 id = 1;
+  string crs_file_name = 2;
+  string crs_file_content = 3;
+  uint32 crs_version_id = 4;
+}

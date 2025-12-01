@@ -89,5 +89,3 @@ curl --location 'http://wafie-api.192.168.1.51.nip.io/wafie.v1.ProtectionService
     "protection_mode": "PROTECTION_MODE_ON"
 }'
 ```
-
-

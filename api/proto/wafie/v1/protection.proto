@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "wafie/v1/application.proto";
+import "wafie/v1/crs.proto";
 
 package wafie.v1;
 
@@ -19,6 +20,12 @@ enum ProtectionMode {
   PROTECTION_MODE_OFF = 2;
 }
 
+enum GetProtectionOptionsIncludeCrsRules{
+  GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_UNSPECIFIED = 0;
+  GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ALL = 1;
+  GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ACTIVE = 2;
+  GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_NONE = 3;
+}
 
 message ModSec {
   ProtectionMode protection_mode = 1;
@@ -35,6 +42,7 @@ message Protection {
   optional Application application = 3;
   ProtectionMode protection_mode = 4;
   ProtectionDesiredState desired_state = 5;
+  repeated CrsVersion crs_versions = 6;
 }
 
 message CreateProtectionRequest {
@@ -47,9 +55,15 @@ message CreateProtectionResponse {
   Protection protection = 1;
 }
 
+message GetProtectionOptions {
+  optional GetProtectionOptionsIncludeCrsRules include_crs_rules = 1;
+}
+
 message GetProtectionRequest {
   uint32 id = 1;
+  optional GetProtectionOptions options = 2;
 }
+
 
 message GetProtectionResponse {
   Protection protection = 1;
