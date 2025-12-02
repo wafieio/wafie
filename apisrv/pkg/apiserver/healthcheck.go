@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"connectrpc.com/grpchealth"
-	"github.com/Dimss/wafie/apisrv/internal/models"
+	"github.com/wafieio/wafie/apisrv/internal/models"
 	"go.uber.org/zap"
 )
 

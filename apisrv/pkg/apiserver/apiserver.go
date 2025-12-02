@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
-	v1 "github.com/Dimss/wafie/api/gen/wafie/v1/wafiev1connect"
+	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"

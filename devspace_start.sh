@@ -34,7 +34,7 @@ This is how you can work with it:
 # Set terminal prompt
 export PS1="\[${COLOR_BLUE}\]devspace\[${COLOR_RESET}\] ./\W \[${COLOR_BLUE}\]\\$\[${COLOR_RESET}\] "
 if [ -z "$BASH" ]; then export PS1="$ "; fi
-export SRC_ROOT="/go/src/github.com/Dimss/wafie"
+export SRC_ROOT="/go/src/github.com/wafieio/wafie"
 touch /tmp/a
 
 echo "alias discovery-agent=\"cd ${SRC_ROOT} && dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient cmd/agent/discovery/main.go -- start\"" >> /tmp/a

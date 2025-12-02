@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

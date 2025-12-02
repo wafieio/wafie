@@ -2,9 +2,9 @@ package apiserver
 
 import (
 	"connectrpc.com/connect"
-	cwafv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	v1 "github.com/Dimss/wafie/api/gen/wafie/v1/wafiev1connect"
-	"github.com/Dimss/wafie/apisrv/internal/models"
+	cwafv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
+	"github.com/wafieio/wafie/apisrv/internal/models"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )

@@ -1,4 +1,4 @@
-module github.com/Dimss/wafie
+module github.com/wafieio/wafie
 
 go 1.25.4
 
@@ -13,7 +13,6 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/envoyproxy/envoy v1.34.1
 	github.com/envoyproxy/go-control-plane v0.13.4
-	github.com/envoyproxy/go-control-plane/contrib v1.32.4
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0

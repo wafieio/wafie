@@ -5,10 +5,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	applogger "github.com/Dimss/wafie/logger"
-	"github.com/Dimss/wafie/relay/pkg/control"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	applogger "github.com/wafieio/wafie/logger"
+	"github.com/wafieio/wafie/relay/pkg/control"
 	"go.uber.org/zap"
 	discoveryv1 "k8s.io/api/discovery/v1"
 )

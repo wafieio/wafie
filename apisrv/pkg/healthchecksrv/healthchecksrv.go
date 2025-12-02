@@ -6,9 +6,9 @@ import (
 
 	"connectrpc.com/connect"
 	"connectrpc.com/grpchealth"
-	healthv1 "github.com/Dimss/wafie/api/gen/grpc/health/v1"
-	"github.com/Dimss/wafie/api/gen/grpc/health/v1/healthv1connect"
-	"github.com/Dimss/wafie/logger"
+	healthv1 "github.com/wafieio/wafie/api/gen/grpc/health/v1"
+	"github.com/wafieio/wafie/api/gen/grpc/health/v1/healthv1connect"
+	"github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"

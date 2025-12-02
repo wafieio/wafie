@@ -5,11 +5,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	applogger "github.com/Dimss/wafie/logger"
-	"github.com/Dimss/wafie/relay/pkg/apisrv"
-	"github.com/Dimss/wafie/relay/pkg/relay"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	applogger "github.com/wafieio/wafie/logger"
+	"github.com/wafieio/wafie/relay/pkg/apisrv"
+	"github.com/wafieio/wafie/relay/pkg/relay"
 	"go.uber.org/zap"
 )
 

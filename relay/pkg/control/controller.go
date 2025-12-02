@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	v1 "github.com/Dimss/wafie/api/gen/wafie/v1/wafiev1connect"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

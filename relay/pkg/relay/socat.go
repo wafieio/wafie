@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	"go.uber.org/zap"
 )
 

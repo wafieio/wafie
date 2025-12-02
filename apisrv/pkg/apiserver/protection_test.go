@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	wafiev1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	applogger "github.com/Dimss/wafie/logger"
 	"github.com/stretchr/testify/assert"
+	wafiev1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	applogger "github.com/wafieio/wafie/logger"
 )
 
 func createProtectionDependencies(t *testing.T) (appId uint32) {

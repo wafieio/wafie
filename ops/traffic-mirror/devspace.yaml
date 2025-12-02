@@ -2,7 +2,7 @@ version: v2beta1
 name: devspace
 dev:
   app:
-    workingDir: /go/src/github.com/Dimss/wafie
+    workingDir: /go/src/github.com/wafieio/wafie
     labelSelector:
       app: "wafie-traffic-mirror"
     container: http-server

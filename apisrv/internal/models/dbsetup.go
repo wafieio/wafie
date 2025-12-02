@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	"github.com/Dimss/wafie/apisrv/internal/models/assets/modsec"
-	"github.com/Dimss/wafie/apisrv/internal/models/assets/sql"
+	"github.com/wafieio/wafie/apisrv/internal/models/assets/modsec"
+	"github.com/wafieio/wafie/apisrv/internal/models/assets/sql"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

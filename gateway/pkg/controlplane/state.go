@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	applogger "github.com/Dimss/wafie/logger"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -23,6 +21,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	applogger "github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"

@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/Dimss/wafie/apisrv/internal/models"
-	"github.com/Dimss/wafie/apisrv/pkg/apiserver"
-	"github.com/Dimss/wafie/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/wafieio/wafie/apisrv/internal/models"
+	"github.com/wafieio/wafie/apisrv/pkg/apiserver"
+	"github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
-	
+
 	"os"
 	"os/signal"
 	"syscall"

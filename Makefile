@@ -6,7 +6,7 @@ shell:
 # Control plane build
 build.cp:
 	go build \
-      -ldflags="-X 'github.com/Dimss/wafie/apisrv/cmd/apiserver/cmd.Build=$$(git rev-parse --short HEAD)'" \
+      -ldflags="-X 'github.com/wafieio/wafie/apisrv/cmd/apiserver/cmd.Build=$$(git rev-parse --short HEAD)'" \
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 build.cp.image:
@@ -18,7 +18,7 @@ build.cp.image:
 .PHONY: gateway
 gateway:
 	go build \
-		-ldflags="-X 'github.com/Dimss/wafie/gateway/cmd.Build=$$(git rev-parse --short HEAD)'" \
+		-ldflags="-X 'github.com/wafieio/wafie/gateway/cmd.Build=$$(git rev-parse --short HEAD)'" \
 		-o .bin/gateway gateway/cmd/main.go
 
 gateway.image:
@@ -41,7 +41,7 @@ xproc.image:
 # Discovery build
 build.discovery:
 	go build \
-      -ldflags="-X 'github.com/Dimss/wafie/discovery/cmd/discovery/cmd.Build=$$(git rev-parse --short HEAD)'" \
+      -ldflags="-X 'github.com/wafieio/wafie/discovery/cmd/discovery/cmd.Build=$$(git rev-parse --short HEAD)'" \
       -o .bin/discovery-agent discovery/cmd/discovery/main.go
 
 # Relay build

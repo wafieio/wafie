@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	"github.com/Dimss/wafie/api/gen/wafie/v1/wafiev1connect"
-	"github.com/Dimss/wafie/apisrv/internal/models"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	"github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
+	"github.com/wafieio/wafie/apisrv/internal/models"
 	"go.uber.org/zap"
 )
 

@@ -7,9 +7,9 @@ package main
 */
 import "C"
 import (
-	applogger "github.com/Dimss/wafie/logger"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
+	applogger "github.com/wafieio/wafie/logger"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

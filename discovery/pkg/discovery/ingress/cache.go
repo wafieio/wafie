@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	v1 "github.com/Dimss/wafie/api/gen/wafie/v1/wafiev1connect"
+	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

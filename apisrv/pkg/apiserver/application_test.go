@@ -3,9 +3,9 @@ package apiserver
 import (
 	"connectrpc.com/connect"
 	"context"
-	cwafv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	applogger "github.com/Dimss/wafie/logger"
 	"github.com/stretchr/testify/assert"
+	cwafv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	applogger "github.com/wafieio/wafie/logger"
 	"testing"
 )
 

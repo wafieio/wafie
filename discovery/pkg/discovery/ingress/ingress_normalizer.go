@@ -3,8 +3,8 @@ package ingress
 import (
 	"fmt"
 
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	applogger "github.com/Dimss/wafie/logger"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	applogger "github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

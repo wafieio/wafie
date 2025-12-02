@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	wafiev1 "github.com/Dimss/wafie/api/gen/wafie/v1"
-	"github.com/Dimss/wafie/apisrv/internal/models"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	wafiev1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	"github.com/wafieio/wafie/apisrv/internal/models"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

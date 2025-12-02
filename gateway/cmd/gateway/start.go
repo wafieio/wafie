@@ -5,11 +5,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	hsrv "github.com/Dimss/wafie/apisrv/pkg/healthchecksrv"
-	"github.com/Dimss/wafie/gateway/pkg/controlplane"
-	"github.com/Dimss/wafie/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	hsrv "github.com/wafieio/wafie/apisrv/pkg/healthchecksrv"
+	"github.com/wafieio/wafie/gateway/pkg/controlplane"
+	"github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 )
 

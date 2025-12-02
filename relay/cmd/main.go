@@ -1,6 +1,6 @@
 package main
 
-import "github.com/Dimss/wafie/relay/cmd/relay"
+import "github.com/wafieio/wafie/relay/cmd/relay"
 
 func main() {
 	relay.Execute()

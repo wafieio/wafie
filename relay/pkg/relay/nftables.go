@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	wv1 "github.com/Dimss/wafie/api/gen/wafie/v1"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	"sigs.k8s.io/knftables"
 )
 
