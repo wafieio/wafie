@@ -147,7 +147,7 @@ func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtection
 			query.Preload("CrsVersions.CrsRuleSets")
 		}
 		if *options.IncludeCrsRules == activeRules {
-			query.Preload("CrsVersions", "status = ?", activeRules).
+			query.Preload("CrsVersions", "status = ?", uint32(wv1.CrsVersionStatus_CRS_VERSION_STATUS_ACTIVE)).
 				Preload("CrsVersions.CrsRuleSets")
 		}
 	}
