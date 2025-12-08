@@ -163,5 +163,6 @@ func (s *CrsRuleSet) ToProto() *wv1.CrsRuleSet {
 		CrsFileName:    s.CrsFileName,
 		CrsFileContent: s.CrsFileContent,
 		CrsVersionId:   uint32(s.CrsVersionID),
+		Md5:            s.MD5,
 	}
 }

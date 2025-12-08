@@ -138,7 +138,7 @@ func (s *ProtectionRepository) CreateProtection(req *wv1.CreateProtectionRequest
 
 func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtectionOptions) (*Protection, error) {
 	p := &Protection{}
-	query := s.db.Model(&Protection{ID: id})
+	query := s.db.Model(&Protection{}).Where("id = ?", id)
 	allRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ALL
 	activeRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ACTIVE
 	if options != nil && options.IncludeCrsRules != nil {
@@ -152,7 +152,7 @@ func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtection
 				})
 		}
 	}
-	err := query.Find(p).Error
+	err := query.First(p).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("protection not found"))
 	} else if err != nil {

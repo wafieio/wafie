@@ -9,12 +9,17 @@ import "C"
 import (
 	"connectrpc.com/connect"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	wv1c "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 	"unsafe"
@@ -24,8 +29,9 @@ type EvalRequest C.WafieEvaluationRequest
 type RuleSetConfig C.WafieRuleSetConfig
 
 type ModeSec struct {
-	logger           *zap.Logger
-	protectionClient wv1c.ProtectionServiceClient
+	logger            *zap.Logger
+	protectionClient  wv1c.ProtectionServiceClient
+	ruleSetBaseConfig string
 }
 
 func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
@@ -41,8 +47,9 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 	C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), 1)
 	// init mod sec instance
 	modSec := &ModeSec{
-		protectionClient: wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
-		logger:           logger,
+		protectionClient:  wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
+		logger:            logger,
+		ruleSetBaseConfig: "/config",
 	}
 	// start the ruleset watcher
 	modSec.RunRulesetWatcher()
@@ -80,31 +87,61 @@ func (s *ModeSec) getProtectionRules(id uint32) (*wv1.Protection, error) {
 	}
 }
 
-func (s *ModeSec) writeRules(pId uint32, ruleSets []*wv1.CrsRuleSet) error {
+func (s *ModeSec) ruleSetMD5(ruleSets []*wv1.CrsRuleSet) (string, error) {
+	h := md5.New()
+	for _, rules := range ruleSets {
+		if _, err := io.WriteString(h, rules.Md5); err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
 
+func (s *ModeSec) writeRules(protectionId uint32, ruleSets []*wv1.CrsRuleSet) error {
+	// calculate rule set md5
+	ruleSetMd5, err := s.ruleSetMD5(ruleSets)
+	if err != nil {
+		return err
+	}
+	// check if rule set config dir has been changed
+	rulesDir := fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, protectionId)
+	_, err = os.Stat(rulesDir)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(rulesDir, 0700); err != nil {
+			return err
+		}
+		for _, rules := range ruleSets {
+			ruleFile := fmt.Sprintf("%s/%s", rulesDir, rules.CrsFileName)
+			if err := os.WriteFile(ruleFile, []byte(rules.CrsFileContent), 0700); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
 func (s *ModeSec) RunRulesetWatcher() {
-	for {
-		time.Sleep(3 * time.Second)
-		s.logger.Debug("fetching current ruleset")
-		for _, p := range s.listProtections() {
-			rules, err := s.getProtectionRules(p.Id)
-			if err != nil {
-				s.logger.Error("error getting ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
-				continue
-			}
-			if len(rules.CrsVersions) != 1 {
-				s.logger.Error("got more than one active rule set",
-					zap.Int("count", len(rules.CrsVersions)), zap.Uint32("protectionId", p.Id))
-				continue
-			}
-			if err := s.writeRules(p.Id, rules.CrsVersions[0].CrsRuleSets); err != nil {
-				s.logger.Error("error writing ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			s.logger.Debug("fetching current ruleset")
+			for _, p := range s.listProtections() {
+				rules, err := s.getProtectionRules(p.Id)
+				if err != nil {
+					s.logger.Error("error getting ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+					continue
+				}
+				if len(rules.CrsVersions) != 1 {
+					s.logger.Error("got more than one active rule set",
+						zap.Int("count", len(rules.CrsVersions)), zap.Uint32("protectionId", p.Id))
+					continue
+				}
+				if err := s.writeRules(p.Id, rules.CrsVersions[0].CrsRuleSets); err != nil {
+					s.logger.Error("error writing ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
