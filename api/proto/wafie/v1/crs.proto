@@ -28,6 +28,7 @@ message CrsRuleSet {
   string crs_file_name = 2;
   string crs_file_content = 3;
   uint32 crs_version_id = 4;
+  string md5 = 5;
 }
 
 message CreateCrsVersionRequest{
