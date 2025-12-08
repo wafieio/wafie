@@ -98,24 +98,22 @@ func seed(db *gorm.DB) error {
 func seedCrsProfiles(db *gorm.DB) error {
 
 	crsRepo := NewCrsRepository(db, nil)
-	profiles, err := crsRepo.GetProfileByName(DefaultCRSProfileName)
+	profileRules := crsRepo.GetProfileRulesByName(DefaultCRSProfileName)
+	if len(profileRules) > 0 {
+		return nil
+	}
+	rules, err := modsec.CRSRuleSet()
 	if err != nil {
 		return err
 	}
-	if len(profiles) == 0 {
-		rules, err := modsec.CRSRuleSet()
-		if err != nil {
+	for crsName, crsContent := range rules {
+		if err := crsRepo.CreateCrsProfile(
+			&CrsProfile{
+				Name:           DefaultCRSProfileName,
+				CrsFileName:    crsName,
+				CrsFileContent: crsContent,
+			}); err != nil {
 			return err
-		}
-		for crsName, crsContent := range rules {
-			if err := crsRepo.CreateCrsProfile(
-				&CrsProfile{
-					Name:           DefaultCRSProfileName,
-					CrsFileName:    crsName,
-					CrsFileContent: crsContent,
-				}); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

@@ -113,9 +113,8 @@ func (p *Protection) ToProto() *wv1.Protection {
 func (p *Protection) AfterCreate(tx *gorm.DB) error {
 	crsRepo := NewCrsRepository(tx, nil)
 	crsVersion := &CrsVersion{
-		Name:         DefaultCrsVersionName,
+		Tag:          DefaultCrsVersionTag,
 		Status:       uint32(wv1.CrsVersionStatus_CRS_VERSION_STATUS_ACTIVE),
-		Version:      DefaultCrsVersion,
 		ProtectionID: p.ID,
 	}
 	if err := crsRepo.CreateCrsVersion(crsVersion); err != nil {

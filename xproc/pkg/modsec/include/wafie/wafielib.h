@@ -5,7 +5,17 @@
 typedef struct {
     const unsigned char *key;
     const unsigned char *value;
-} EvaluationRequestHeader;
+} WafieEvaluationRequestHeader;
+
+typedef struct {
+    char *config_path;
+    int protection_id;
+} WafieRuleSetConfig;
+
+typedef struct {
+    int protection_id;
+    RulesSet *rules;
+} WafieRuleSet;
 
 typedef struct {
     char *client_ip;
@@ -14,26 +24,22 @@ typedef struct {
     char *http_version;
     char *body;
     size_t headers_count;
-    EvaluationRequestHeader *headers;
+    int total_loaded_rules;
+    int protection_id;
+    WafieEvaluationRequestHeader *headers;
     Transaction *transaction;
-} EvaluationRequest;
+} WafieEvaluationRequest;
 
-void wafie_library_init(char const *config_path);
+void wafie_init();
 
-int wafie_process_request_headers(EvaluationRequest const *request);
+void wafie_init_transaction(WafieEvaluationRequest *request);
 
-int wafie_process_request_body(EvaluationRequest const *request);
+void wafie_cleanup(WafieEvaluationRequest const *request);
 
-void wafie_init_request_transaction(EvaluationRequest *request);
+void wafie_load_rule_sets(WafieRuleSetConfig cfg[], const int cfg_size);
 
-void wafie_transaction_cleanup(EvaluationRequest const *request);
+int wafie_process_request_headers(WafieEvaluationRequest const *request);
 
-void wafie_dump_rules();
-
-void wafie_cleanup(char const *error, RulesSet *rules, ModSecurity *modsec);
-
-int wafie_add_rule(char const *rule);
-
-
+int wafie_process_request_body(WafieEvaluationRequest const *request);
 
 #endif //WAFIELIB_LIBRARY_H

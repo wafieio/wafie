@@ -15,7 +15,7 @@ COPY ../../Makefile ./
 COPY --from=protobuf-builder /app/api ./api
 COPY ../../apisrv ./apisrv
 COPY ../../discovery ./discovery
-RUN make build
+RUN make api discovery
 
 FROM debian:bookworm-slim
 COPY --from=builder /app/.bin/discovery-agent /usr/local/bin/discovery-agent

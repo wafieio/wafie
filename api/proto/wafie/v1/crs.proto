@@ -16,8 +16,8 @@ message CrsProfile {
 }
 
 message CrsVersion {
-  uint32 id = 1;
-  string name = 2;
+  optional uint32 id = 1;
+  string tag = 2;
   CrsVersionStatus status = 3;
   uint32 protection_id = 4;
   repeated CrsRuleSet crs_rule_sets = 5;
@@ -28,4 +28,25 @@ message CrsRuleSet {
   string crs_file_name = 2;
   string crs_file_content = 3;
   uint32 crs_version_id = 4;
+}
+
+message CreateCrsVersionRequest{
+  CrsVersion version = 1;
+}
+
+message CreateCrsVersionResponse{
+  CrsVersion version = 1;
+}
+
+message CreateCrsRuleSetRequest{
+  uint32 crs_version_id = 1;
+  string profile_name = 2;
+}
+
+message CreateCrsRuleSetResponse{}
+
+
+service CrsService {
+  rpc CreateCrsVersion(CreateCrsVersionRequest) returns (CreateCrsVersionResponse);
+  rpc CreateCrsRuleSet(CreateCrsRuleSetRequest) returns (CreateCrsRuleSetResponse);
 }

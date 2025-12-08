@@ -20,9 +20,9 @@ type ExternalProcessor struct {
 	extproc.UnimplementedExternalProcessorServer
 }
 
-func NewExternalProcessor(logger *zap.Logger) *ExternalProcessor {
+func NewExternalProcessor(apiAddr string, logger *zap.Logger) *ExternalProcessor {
 	return &ExternalProcessor{
-		modsec: modsec.NewModSec(logger),
+		modsec: modsec.NewModSec(apiAddr, logger),
 		assets: assets.New(logger),
 		logger: logger,
 	}

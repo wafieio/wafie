@@ -1,27 +1,29 @@
 package models
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	applogger "github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"io"
 	"time"
 )
 
 const (
 	DefaultCRSProfileName = "default-crs-profile"
-	DefaultCrsVersion     = "default"
-	DefaultCrsVersionName = "default"
+	DefaultCrsVersionTag  = "default"
 )
 
 type CrsVersion struct {
 	ID           uint         `gorm:"primary_key"`
-	Name         string       `gorm:"not null"`
+	Tag          string       `gorm:"not null;uniqueIndex:idx_tag_protection_id_crc_version"`
 	Status       uint32       `gorm:"default:0"`
-	Version      string       `gorm:"not null"`
 	CrsRuleSets  []CrsRuleSet `gorm:"foreignKey:CrsVersionID;references:ID"`
-	ProtectionID uint         `gorm:"not null"`
+	ProtectionID uint         `gorm:"not null;uniqueIndex:idx_tag_protection_id_crc_version"`
 	Protection   Protection   `gorm:"foreignKey:ProtectionID;references:ID"`
 	CreatedAt    time.Time    `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time    `gorm:"default:CURRENT_TIMESTAMP"`
@@ -42,6 +44,7 @@ type CrsRuleSet struct {
 	CrsFileContent string     `gorm:"not null"`
 	CrsVersionID   uint       `gorm:"not null"`
 	CrsVersion     CrsVersion `gorm:"foreignKey:CrsVersionID;references:ID"`
+	MD5            string     `gorm:"not null"`
 	CreatedAt      time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt      time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
 }
@@ -73,31 +76,53 @@ func (r *CRSRepository) CreateCrsRuleSet(ruleSet *CrsRuleSet) error {
 	return r.db.Create(ruleSet).Error
 }
 
-func (r *CRSRepository) GetProfileByName(profileName string) ([]*CrsProfile, error) {
-	var profiles []*CrsProfile
-	return profiles,
-		r.db.Model(&CrsProfile{}).
-			Where("name = ?", profileName).
-			Find(&profiles).Error
+func (r *CRSRepository) GetProfileRulesByName(profileName string) (rules []*CrsProfile) {
+	r.db.Model(&CrsProfile{}).
+		Where("name = ?", profileName).
+		Find(&rules)
+	return rules
 }
 
 func (r *CRSRepository) CreateCrsVersion(crsVersion *CrsVersion) error {
 	return r.db.Create(crsVersion).Error
 }
 
-func (r *CRSRepository) CloneCrsProfileToCrsRuleSet(profileName string, crsVersionId uint) error {
-	profiles, err := r.GetProfileByName(profileName)
+func (r *CRSRepository) uniqueCloneProfileOperation(crsVersionId uint) bool {
+	// clone can be done only once
+	// and only if no existing crs version
+	// created yet in crs rule sets
+	err := r.db.First(&CrsRuleSet{CrsVersionID: crsVersionId}).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// allow profile clone only if crs rule with crs version not exist yet
+		return true
+	}
 	if err != nil {
-		return err
+		r.logger.Error(err.Error())
 	}
-	if len(profiles) == 0 {
-		return fmt.Errorf("profile %s not found", profileName)
+	return false
+}
+
+func (r *CRSRepository) CloneCrsProfileToCrsRuleSet(profileName string, crsVersionId uint) error {
+	if !r.uniqueCloneProfileOperation(crsVersionId) {
+		r.logger.With(zap.Uint("crsVersionId", crsVersionId)).
+			With(zap.String("profileName", profileName)).
+			Warn("profile already cloned for the provided crs version")
+		return nil
 	}
-	for _, profile := range profiles {
+	rules := r.GetProfileRulesByName(profileName)
+	if len(rules) == 0 {
+		return fmt.Errorf("profile %s does not exist", profileName)
+	}
+	for _, rule := range rules {
+		h := md5.New()
+		if _, err := io.WriteString(h, rule.CrsFileContent); err != nil {
+			return err
+		}
 		if err := r.CreateCrsRuleSet(&CrsRuleSet{
-			CrsFileName:    profile.CrsFileName,
-			CrsFileContent: profile.CrsFileContent,
+			CrsFileName:    rule.CrsFileName,
+			CrsFileContent: rule.CrsFileContent,
 			CrsVersionID:   crsVersionId,
+			MD5:            hex.EncodeToString(h.Sum(nil)),
 		}); err != nil {
 			return err
 		}
@@ -106,9 +131,10 @@ func (r *CRSRepository) CloneCrsProfileToCrsRuleSet(profileName string, crsVersi
 }
 
 func (v *CrsVersion) ToProto() *wv1.CrsVersion {
+	id := uint32(v.ID)
 	crsVersion := &wv1.CrsVersion{
-		Id:           uint32(v.ID),
-		Name:         v.Name,
+		Id:           &id,
+		Tag:          v.Tag,
 		Status:       wv1.CrsVersionStatus(v.Status),
 		ProtectionId: uint32(v.ProtectionID),
 	}
@@ -117,6 +143,18 @@ func (v *CrsVersion) ToProto() *wv1.CrsVersion {
 		crsVersion.CrsRuleSets = append(crsVersion.CrsRuleSets, ruleSet.ToProto())
 	}
 	return crsVersion
+}
+
+func (v *CrsVersion) FromProto(crsVersion *wv1.CrsVersion) {
+	if crsVersion == nil {
+		return
+	}
+	if crsVersion.Id != nil {
+		v.ID = uint(*crsVersion.Id)
+	}
+	v.Tag = crsVersion.Tag
+	v.Status = uint32(crsVersion.Status)
+	v.ProtectionID = uint(crsVersion.ProtectionId)
 }
 
 func (s *CrsRuleSet) ToProto() *wv1.CrsRuleSet {

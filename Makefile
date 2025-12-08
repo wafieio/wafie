@@ -3,13 +3,13 @@ SHELL := /usr/bin/env bash
 shell:
 	@$(RUN) /bin/bash
 
-# Control plane build
-build.cp:
+.PHONY: api
+api:
 	go build \
       -ldflags="-X 'github.com/wafieio/wafie/apisrv/cmd/apiserver/cmd.Build=$$(git rev-parse --short HEAD)'" \
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
-build.cp.image:
+api.image:
 	podman buildx build -t docker.io/dimssss/wafie-control-plane --platform linux/arm64 -f dockerfiles/controlplane/Dockerfile .
 	podman push docker.io/dimssss/wafie-control-plane
 
@@ -38,8 +38,8 @@ xproc.image:
 	podman push docker.io/dimssss/wafie-xproc
 
 
-# Discovery build
-build.discovery:
+.PHONY: discovery
+discovery:
 	go build \
       -ldflags="-X 'github.com/wafieio/wafie/discovery/cmd/discovery/cmd.Build=$$(git rev-parse --short HEAD)'" \
       -o .bin/discovery-agent discovery/cmd/discovery/main.go

@@ -53,7 +53,6 @@ spec:
               port: 8082
         - name: proxy-xproc
           image: {{.Values.gateway.xproc}}
-          command: []
           volumeMounts:
             - name: xproc-socket
               mountPath: /var/run/wafie/xproc

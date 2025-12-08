@@ -26,14 +26,17 @@ var (
 )
 
 func init() {
+	startCmd.PersistentFlags().StringP("api-addr", "a", "http://localhost:8080", "API address")
 	startCmd.PersistentFlags().StringP("xproc-socket", "s",
 		"/var/run/wafie/xproc/socket", "wafie ext proc socket")
+	viper.BindPFlag("api-addr", startCmd.PersistentFlags().Lookup("api-addr"))
 	viper.BindPFlag("xproc-socket", startCmd.PersistentFlags().Lookup("xproc-socket"))
 	rootCmd.AddCommand(startCmd)
 }
 
 func runServer() {
 	l := logger.NewLogger()
+	apiAddr := viper.GetString("api-addr")
 	socket := viper.GetString("xproc-socket")
 	if err := os.RemoveAll(socket); err != nil {
 		l.Error("failed to create listening unix socket", zap.String("socket", socket), zap.Error(err))
@@ -49,7 +52,7 @@ func runServer() {
 		os.Exit(1)
 	}
 	srv := grpc.NewServer()
-	extproc.RegisterExternalProcessorServer(srv, processor.NewExternalProcessor(l))
+	extproc.RegisterExternalProcessorServer(srv, processor.NewExternalProcessor(apiAddr, l))
 	l.Info("wafie external processor server listening", zap.String("socket", socket))
 	if err := srv.Serve(lis); err != nil {
 		l.Error("failed to serve", zap.String("socket", socket), zap.Error(err))

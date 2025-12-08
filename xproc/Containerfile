@@ -1,5 +1,14 @@
 FROM docker.io/dimssss/modsec as libwafie
 
+FROM bufbuild/buf AS protobuf-builder
+WORKDIR /app
+ADD ../api ./api
+ADD ../Makefile ./
+RUN cd api \
+    && buf dep update \
+    && buf lint \
+    && buf generate
+
 FROM debian:bookworm-slim
 ARG ARCH
 ENV GO_VERSION="go1.25.4.linux-${ARCH}.tar.gz"
@@ -22,6 +31,7 @@ RUN wget "https://go.dev/dl/${GO_VERSION}" \
     && rm ${GO_VERSION}
 COPY --from=libwafie /wafie/build/libwafie.so /usr/local/lib/libwafie.so
 COPY --from=libwafie /wafie/build/test_hello /usr/local/bin/test_hello
+COPY --from=protobuf-builder /app/api ./api
 COPY xproc/pkg/modsec/config/ /config
 COPY xproc/pkg/modsec/include/ /usr/local/include
 RUN ldconfig
