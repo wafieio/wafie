@@ -3,6 +3,7 @@ package modsec
 /*
 #cgo LDFLAGS: -lwafie
 #include <stdlib.h>
+#include <stdint.h>
 #include <wafie/wafielib.h>
 */
 import "C"
@@ -20,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unsafe"
@@ -38,13 +40,13 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 	// init wafie library
 	C.wafie_init()
 	// init ruleset
-	ruleSetConfig := []RuleSetConfig{
-		{
-			config_path:   C.CString("/config"),
-			protection_id: C.int(1),
-		},
-	}
-	C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), 1)
+	//ruleSetConfig := []RuleSetConfig{
+	//	{
+	//		config_path:   C.CString("/config"),
+	//		protection_id: C.int(1),
+	//	},
+	//}
+	//C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), 0)
 	// init mod sec instance
 	modSec := &ModeSec{
 		protectionClient:  wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
@@ -52,7 +54,7 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 		ruleSetBaseConfig: "/config",
 	}
 	// start the ruleset watcher
-	modSec.RunRulesetWatcher()
+	modSec.runRulesetWatcher()
 	// return modeSec instance
 	return modSec
 }
@@ -97,38 +99,88 @@ func (s *ModeSec) ruleSetMD5(ruleSets []*wv1.CrsRuleSet) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func (s *ModeSec) writeRules(protectionId uint32, ruleSets []*wv1.CrsRuleSet) error {
-	// calculate rule set md5
-	ruleSetMd5, err := s.ruleSetMD5(ruleSets)
-	if err != nil {
-		return err
-	}
-	// check if rule set config dir has been changed
-	rulesDir := fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, protectionId)
-	_, err = os.Stat(rulesDir)
+func (s *ModeSec) shouldWrite(rulesDir string) (bool, error) {
+	_, err := os.Stat(rulesDir)
+	// if directory not exists, write it
 	if os.IsNotExist(err) {
-		if err := os.MkdirAll(rulesDir, 0700); err != nil {
-			return err
-		}
-		for _, rules := range ruleSets {
-			ruleFile := fmt.Sprintf("%s/%s", rulesDir, rules.CrsFileName)
-			if err := os.WriteFile(ruleFile, []byte(rules.CrsFileContent), 0700); err != nil {
-				return err
-			}
-		}
+		return true, nil
 	}
-	return nil
+	// in case of any other error, return it
+	if err != nil {
+		return false, err
+	}
+	// check directory entries
+	entries, err := os.ReadDir(rulesDir)
+	if err != nil {
+		return false, err
+	}
+	// if no rules files found, write it
+	if len(entries) == 0 {
+		return true, nil
+	}
+	//  has rule files, do not write and return
+	return false, nil
 }
 
-func (s *ModeSec) RunRulesetWatcher() {
+func (s *ModeSec) writeRules(protectionId uint32, ruleSetMd5 string, ruleSets []*wv1.CrsRuleSet) (reloadRequire bool, err error) {
+	// check for a changes in a rule set
+	rulesDir := fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, protectionId)
+	shouldWrite, err := s.shouldWrite(rulesDir)
+	if err != nil {
+		return false, err
+	}
+	// write rules not required, return
+	if !shouldWrite {
+		return false, nil
+	}
+	// rules write is required, write the rules,
+	// set reloadRequire=true for further reloading in libwafie
+	s.logger.Info("rules write required", zap.String("rulesDir", rulesDir))
+	reloadRequire = true
+	for _, rules := range ruleSets {
+		ruleFile := fmt.Sprintf("%s/%s", rulesDir, rules.CrsFileName)
+		dirPath, _ := filepath.Split(ruleFile)
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return false, err
+		}
+		if err := os.WriteFile(ruleFile, []byte(rules.CrsFileContent), 0700); err != nil {
+			return false, err
+		}
+	}
+	return reloadRequire, nil
+}
+
+func (s *ModeSec) reloadCRSRules(ruleSetConfigForReload map[string]uint32) {
+	ruleSetConfig := make([]RuleSetConfig, len(ruleSetConfigForReload))
+	defer func() {
+		for i := range ruleSetConfig {
+			C.free(unsafe.Pointer(ruleSetConfig[i].config_path)) // free all the C strings
+		}
+	}()
+	idx := 0
+	for configPath, protectionId := range ruleSetConfigForReload {
+		ruleSetConfig[idx].config_path = C.CString(configPath)
+		ruleSetConfig[idx].protection_id = C.uint32_t(protectionId)
+		idx++
+	}
+	C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), C.int(len(ruleSetConfigForReload)))
+
+}
+
+func (s *ModeSec) runRulesetWatcher() {
+	firstRun := true
 	go func() {
 		for {
 			time.Sleep(3 * time.Second)
-			s.logger.Debug("fetching current ruleset")
+			reloadRequire := false
+			ruleSetConfigForReload := map[string]uint32{}
 			for _, p := range s.listProtections() {
 				rules, err := s.getProtectionRules(p.Id)
 				if err != nil {
 					s.logger.Error("error getting ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+					continue
+				}
+				if rules.CrsVersions == nil {
 					continue
 				}
 				if len(rules.CrsVersions) != 1 {
@@ -136,9 +188,25 @@ func (s *ModeSec) RunRulesetWatcher() {
 						zap.Int("count", len(rules.CrsVersions)), zap.Uint32("protectionId", p.Id))
 					continue
 				}
-				if err := s.writeRules(p.Id, rules.CrsVersions[0].CrsRuleSets); err != nil {
-					s.logger.Error("error writing ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+				if len(rules.CrsVersions[0].CrsRuleSets) == 0 {
+					continue
 				}
+				// calculate rule set md5
+				ruleSetMd5, err := s.ruleSetMD5(rules.CrsVersions[0].CrsRuleSets)
+				if err != nil {
+					s.logger.Error("error getting rule set md5", zap.Error(err))
+					continue
+				}
+				if reload, err := s.writeRules(p.Id, ruleSetMd5, rules.CrsVersions[0].CrsRuleSets); err != nil {
+					s.logger.Error("error writing ruleset", zap.Error(err), zap.Uint32("protectionId", p.Id))
+				} else if reload {
+					reloadRequire = true
+				}
+				ruleSetConfigForReload[fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, p.Id)] = p.Id
+			}
+			if reloadRequire || firstRun {
+				firstRun = false
+				s.reloadCRSRules(ruleSetConfigForReload)
 			}
 		}
 	}()
@@ -152,6 +220,7 @@ func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
 	C.free(unsafe.Pointer(evalRequest.uri))
 	C.free(unsafe.Pointer(evalRequest.http_method))
 	C.free(unsafe.Pointer(evalRequest.http_version))
+	C.free(unsafe.Pointer(evalRequest.body))
 	for i := 0; i < int(evalRequest.headers_count); i++ {
 		hdr := (*C.WafieEvaluationRequestHeader)(
 			unsafe.Pointer(uintptr(unsafe.Pointer(evalRequest.headers)) + uintptr(i)*
@@ -178,11 +247,12 @@ func (s *ModeSec) InitEvalRequest(
 		}
 	}
 	// set basic intervention parameters
-	evalRequest.client_ip = C.CString(attributes["request.address"])
+	//evalRequest.client_ip = C.CString(attributes["request.address"])
+	evalRequest.client_ip = C.CString("192.168.2.101")
 	evalRequest.uri = C.CString(attributes["request.path"])
 	evalRequest.http_method = C.CString(attributes["request.method"])
 	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes["request.protocol"]))
-	evalRequest.protection_id = C.int(1)
+	evalRequest.protection_id = C.uint32_t(1)
 	// envoy by default will be using :authority for a host header
 	// ModSecurity need host header
 	hdrs = append(hdrs, &corev3.HeaderValue{Key: "host", RawValue: s.getAuthorityHeader(hdrs)})
@@ -192,9 +262,6 @@ func (s *ModeSec) InitEvalRequest(
 	evalRequest.headers = (*C.WafieEvaluationRequestHeader)(
 		C.malloc(C.size_t(unsafe.Sizeof(C.WafieEvaluationRequestHeader{})) * C.size_t(headersCount)),
 	)
-	//if body not set to empty string,
-	//it will be NULL and will be skipped from evaluation
-	evalRequest.body = C.CString("")
 	// add headers into evaluation request
 	for idx, hdr := range hdrs {
 		headerPtr := (*C.WafieEvaluationRequestHeader)(
@@ -210,6 +277,7 @@ func (s *ModeSec) InitEvalRequest(
 			headerPtr.value = (*C.uchar)(unsafe.Pointer(C.CString(string(hdr.RawValue))))
 		}
 	}
+	// init modsec transaction
 	C.wafie_init_transaction((*C.WafieEvaluationRequest)(&evalRequest))
 	return &evalRequest
 }
@@ -236,23 +304,11 @@ func (s *ModeSec) getAuthorityHeader(hdrs []*corev3.HeaderValue) []byte {
 }
 
 func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
-	s.logger.Info("new evaluation request",
-		zap.Any("client_ip", evalRequest.client_ip),
-		zap.Any("uri", evalRequest.uri),
-		zap.Any("method", evalRequest.http_method),
-		zap.Any("version", evalRequest.http_version),
-		zap.Any("headers_count", evalRequest.headers_count),
-		zap.Any("headers", evalRequest.headers),
-	)
-
 	if C.wafie_process_request_headers((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
 		s.logger.Debug("intervention on headers evaluation")
 		return true
 	}
-	if C.wafie_process_request_body((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
-		s.logger.Debug("intervention on body evaluation")
-		return true
-	}
+
 	return false
 }
 
