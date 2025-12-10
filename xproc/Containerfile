@@ -39,4 +39,4 @@ ADD go.mod go.sum Makefile ./
 ADD xproc ./xproc
 ADD logger ./logger
 RUN go build -o /usr/local/bin/xproc xproc/cmd/main.go
-CMD ["/usr/local/bin/xproc", "start"]
+ENTRYPOINT ["/usr/local/bin/xproc", "start"]

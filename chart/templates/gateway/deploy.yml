@@ -53,6 +53,8 @@ spec:
               port: 8082
         - name: proxy-xproc
           image: {{.Values.gateway.xproc}}
+          args:
+          - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.controlPlane.svc.name .Release.Namespace (.Values.controlPlane.svc.port | int)) }}
           volumeMounts:
             - name: xproc-socket
               mountPath: /var/run/wafie/xproc
