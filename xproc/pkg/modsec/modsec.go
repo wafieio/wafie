@@ -247,7 +247,7 @@ func (s *ModeSec) InitEvalRequest(
 		}
 	}
 	// set basic intervention parameters
-	evalRequest.client_ip = C.CString(attributes["request.address"])
+	evalRequest.client_ip = C.CString(attributes["source.address"])
 	evalRequest.uri = C.CString(attributes["request.path"])
 	evalRequest.http_method = C.CString(attributes["request.method"])
 	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes["request.protocol"]))

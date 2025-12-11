@@ -28,7 +28,7 @@ spec:
             - /usr/local/bin/wafie-relay
             - start
             - relay-instance-controller
-            - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.controlPlane.svc.name .Release.Namespace (.Values.controlPlane.svc.port | int)) }}
+            - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.api.svc.name .Release.Namespace (.Values.api.svc.port | int)) }}
           securityContext:
             runAsUser: 0
             runAsGroup: 0

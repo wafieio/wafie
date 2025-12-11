@@ -3,11 +3,11 @@
 # for different services
 baseHost: ""
 
-# Control Plane parameters
-controlPlane:
+# Control Plane API parameters
+api:
   image: dimssss/wafie-control-plane:latest
   svc:
-    name: wafie-control-plane
+    name: wafie-api
     port: 80
 
 # Discover Agent parameters

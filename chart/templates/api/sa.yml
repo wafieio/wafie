@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: wafie-control-plane
+  name: wafie-api
   namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: wafie-control-plane
+  name: wafie-api
 rules:
   - apiGroups: [ "" ]
     resources: [ "services"]
@@ -25,12 +25,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: wafie-control-plane
+  name: wafie-api
 subjects:
   - kind: ServiceAccount
-    name: wafie-control-plane
+    name: wafie-api
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: wafie-control-plane
+  name: wafie-api
   apiGroup: rbac.authorization.k8s.io

@@ -274,6 +274,8 @@ func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConne
 		CodecType:         hcm.HttpConnectionManager_AUTO,
 		StatPrefix:        "http",
 		GenerateRequestId: &wrappers.BoolValue{Value: true},
+		UseRemoteAddress:  &wrappers.BoolValue{Value: true},
+		XffNumTrustedHops: 1,
 		AccessLog: []*accesslog.AccessLog{
 			{
 				Name: "envoy.access_loggers.stdout",

@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wafie-control-plane
+  name: wafie-api
   namespace: {{.Release.Namespace}}
   labels:
-    app: wafie-control-plane
+    app: wafie-api
 spec:
   selector:
     matchLabels:
-      app: wafie-control-plane
+      app: wafie-api
   template:
     metadata:
       labels:
-        app: wafie-control-plane
+        app: wafie-api
     spec:
-      serviceAccountName: wafie-control-plane
+      serviceAccountName: wafie-api
       containers:
         - name: api-server
-          image: {{.Values.controlPlane.image}}
+          image: {{.Values.api.image}}
           imagePullPolicy: Always
           command:
             - /usr/local/bin/api-server
