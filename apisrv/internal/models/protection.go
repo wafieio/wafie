@@ -97,10 +97,13 @@ func (p *Protection) ToProto() *wv1.Protection {
 		Id:             uint32(p.ID),
 		ApplicationId:  uint32(p.ApplicationID),
 		ProtectionMode: wv1.ProtectionMode(p.Mode),
-		DesiredState: &wv1.ProtectionDesiredState{ModeSec: &wv1.ModSec{
-			ProtectionMode: wv1.ProtectionMode(p.DesiredState.ModSec.Mode),
-			ParanoiaLevel:  wv1.ParanoiaLevel(p.DesiredState.ModSec.ParanoiaLevel),
-		}},
+		DesiredState: &wv1.ProtectionDesiredState{
+			ModeSec: &wv1.ModSec{
+				ProtectionMode: wv1.ProtectionMode(p.DesiredState.ModSec.Mode),
+				ParanoiaLevel:  wv1.ParanoiaLevel(p.DesiredState.ModSec.ParanoiaLevel),
+			},
+			XffNumTrustedHops: p.DesiredState.XffNumTrustedHops,
+		},
 	}
 	if p.Application.ID != 0 {
 		protection.Application = p.Application.ToProto()

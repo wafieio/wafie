@@ -198,9 +198,8 @@ func (s *state) routes(protection *wv1.Protection) []*route.Route {
 		Action: &route.Route_Route{
 			Route: routeAction,
 		},
-		//Metadata: s.makeMetadata(protection),
 	}
-
+	
 	return append(routes, r)
 }
 
@@ -251,23 +250,6 @@ func (s *state) wafieXprocCluster() *cluster.Cluster {
 	}
 }
 
-//func (s *state) makeMetadata(protection *wv1.Protection) *core.Metadata {
-//	namespace := "wafie.custom.data"
-//	data := map[string]interface{}{
-//		"protectionId": protection.Id,
-//	}
-//	pStruct, err := structpb.NewStruct(data)
-//	if err != nil {
-//		s.logger.Error("failed to create metadata", zap.Error(err))
-//		return nil
-//	}
-//	return &core.Metadata{
-//		FilterMetadata: map[string]*structpb.Struct{
-//			namespace: pStruct,
-//		},
-//	}
-//}
-
 func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConnectionManager {
 	stdoutLogs, _ := anypb.New(&stream.StdoutAccessLog{})
 	return &hcm.HttpConnectionManager{
@@ -275,7 +257,7 @@ func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConne
 		StatPrefix:        "http",
 		GenerateRequestId: &wrappers.BoolValue{Value: true},
 		UseRemoteAddress:  &wrappers.BoolValue{Value: true},
-		XffNumTrustedHops: 1,
+		XffNumTrustedHops: protection.DesiredState.XffNumTrustedHops,
 		AccessLog: []*accesslog.AccessLog{
 			{
 				Name: "envoy.access_loggers.stdout",
