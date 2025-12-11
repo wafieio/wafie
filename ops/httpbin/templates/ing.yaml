@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: httpbin
+  namespace: {{.Release.Namespace}}
+spec:
+  rules:
+    - host: "httpbin-{{.Values.baseHost}}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: httpbin
+                port:
+                  name: http
+            path: /
+            pathType: ImplementationSpecific

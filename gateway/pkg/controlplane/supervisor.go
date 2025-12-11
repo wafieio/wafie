@@ -30,17 +30,7 @@ func NewSupervisor(log *zap.Logger) *Supervisor {
 }
 
 func (s *Supervisor) Start() {
-	s.startProxyProcess()
 	s.startLogRotationProcess()
-}
-
-func (s *Supervisor) startProxyProcess() {
-	s.logger.Info("starting envoy proxy")
-	s.runBackgroundCmd(
-		exec.Command(
-			s.envoyPath, []string{"-c", s.envoyConfigFile}...,
-		),
-	)
 }
 
 func (s *Supervisor) startLogRotationProcess() {

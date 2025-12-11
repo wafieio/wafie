@@ -2,6 +2,7 @@ package processor
 
 import "C"
 import (
+	"fmt"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -11,6 +12,11 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"log"
+	"strconv"
+)
+
+const (
+	wafieProtectionIdHeader = "x-wafie-protection-id"
 )
 
 type ExternalProcessor struct {
@@ -37,6 +43,21 @@ func (s *ExternalProcessor) requestAttributes(requestAttr map[string]*structpb.S
 	}
 }
 
+func (s *ExternalProcessor) getProtectionId(hdrs []*core.HeaderValue) uint32 {
+	for _, hdr := range hdrs {
+		if hdr.Key == wafieProtectionIdHeader {
+			s.logger.Info("protection id", zap.String("protection_id", hdr.Value))
+			val, err := strconv.ParseUint(string(hdr.RawValue), 10, 32)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return 0
+			}
+			return uint32(val)
+		}
+	}
+	return 0
+}
+
 func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServer) error {
 	var evalRequest *modsec.EvalRequest
 	defer func() {
@@ -44,7 +65,6 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			s.modsec.DestroyTransaction(evalRequest)
 		}
 	}()
-
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
@@ -53,16 +73,21 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		if err != nil {
 			return err
 		}
-
 		var resp *extproc.ProcessingResponse
 		switch r := req.Request.(type) {
 		// Request Headers Evaluation
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
+			// get proteciotn ID
+			protectionId := s.getProtectionId(r.RequestHeaders.Headers.Headers)
+			if protectionId == 0 {
+				s.logger.Warn("protection id is undefined")
+			}
 			// init eval request
 			evalRequest = s.modsec.InitEvalRequest(
 				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
 				r.RequestHeaders.Headers.Headers,
+				protectionId,
 			)
 			// process transaction
 			intervened := s.modsec.EvaluateHeaders(evalRequest)

@@ -91,7 +91,7 @@ func (r *CRSRepository) uniqueCloneProfileOperation(crsVersionId uint) bool {
 	// clone can be done only once
 	// and only if no existing crs version
 	// created yet in crs rule sets
-	err := r.db.First(&CrsRuleSet{CrsVersionID: crsVersionId}).Error
+	err := r.db.Where("crs_version_id = ?", crsVersionId).First(&CrsRuleSet{}).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// allow profile clone only if crs rule with crs version not exist yet
 		return true

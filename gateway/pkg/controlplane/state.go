@@ -2,18 +2,16 @@ package controlplane
 
 import (
 	"fmt"
-	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
-	"strconv"
-	"time"
-
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	v3listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	stream "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/stream/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	hmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	upstreams "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -27,9 +25,13 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"time"
 )
 
-const wafieExtProcClusterName = "wafie_xproc_cluster"
+const (
+	wafieExtProcClusterName = "wafie_xproc_cluster"
+	wafieProtectionIdHeader = "x-wafie-protection-id"
+)
 
 type state struct {
 	xprocSocket string
@@ -43,8 +45,11 @@ func newState(xprocSocket string) *state {
 	}
 }
 
-func (s *state) wafieXprocFilter() *extproc.ExternalProcessor {
-	return &extproc.ExternalProcessor{
+func (s *state) wafieXprocFilter(protection *wv1.Protection) *hcm.HttpFilter {
+	if protection.DesiredState.ModeSec.ProtectionMode != wv1.ProtectionMode_PROTECTION_MODE_ON {
+		return nil
+	}
+	xproc := &extproc.ExternalProcessor{
 		GrpcService: &core.GrpcService{
 			TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
 				EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
@@ -70,6 +75,133 @@ func (s *state) wafieXprocFilter() *extproc.ExternalProcessor {
 			AllowEnvoy:      &wrappers.BoolValue{Value: true},
 		},
 	}
+	wafieExtProcFilter, err := anypb.New(xproc)
+	if err != nil {
+		s.logger.Error("error creating wafie extended process filter", zap.Error(err))
+		return nil
+	}
+
+	return &hcm.HttpFilter{
+		Name: "envoy.filters.http.ext_proc",
+		ConfigType: &hcm.HttpFilter_TypedConfig{
+			TypedConfig: wafieExtProcFilter,
+		},
+	}
+
+	//MetadataOptions: &extproc.MetadataOptions{
+	//	ForwardingNamespaces: &extproc.MetadataOptions_MetadataNamespaces{
+	//		Untyped: []string{
+	//			"*",
+	//		},
+	//	},
+	//	ReceivingNamespaces: &extproc.MetadataOptions_MetadataNamespaces{
+	//		Untyped: []string{
+	//			"*",
+	//		},
+	//	},
+	//},
+
+}
+
+func (s *state) headerMutationFilter(protection *wv1.Protection) *hcm.HttpFilter {
+	headerMutation := &hmv3.HeaderMutation{
+		Mutations: &hmv3.Mutations{
+			RequestMutations: []*mutation_rulesv3.HeaderMutation{
+				{
+					Action: &mutation_rulesv3.HeaderMutation_Append{
+						Append: &core.HeaderValueOption{
+							Header: &core.HeaderValue{
+								Key:   wafieProtectionIdHeader,
+								Value: fmt.Sprintf("%d", protection.Id),
+							},
+							AppendAction: core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+						},
+					},
+				},
+			},
+		},
+	}
+	pbst, err := anypb.New(headerMutation)
+	if err != nil {
+		s.logger.Error("error defining a header mutation filter", zap.Error(err))
+		return nil
+	}
+	return &hcm.HttpFilter{
+		Name: "envoy.filters.http.header_mutation",
+		ConfigType: &hcm.HttpFilter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	}
+
+}
+
+func (s *state) httpRouterFilter() *hcm.HttpFilter {
+	routerConfig, err := anypb.New(&router.Router{})
+	if err != nil {
+		s.logger.Error("error creating http router filter", zap.Error(err))
+		return nil
+	}
+	return &hcm.HttpFilter{
+		Name: wellknown.Router,
+		ConfigType: &hcm.HttpFilter_TypedConfig{
+			TypedConfig: routerConfig,
+		},
+	}
+}
+
+func (s *state) httpFilters(protection *wv1.Protection) []*hcm.HttpFilter {
+	filters := []*hcm.HttpFilter{
+		// protection id  injection filter
+		s.headerMutationFilter(protection),
+		// wafie modsec filter
+		s.wafieXprocFilter(protection),
+		// http router filter
+		s.httpRouterFilter(),
+	}
+
+	return filters
+}
+
+func (s *state) mirroredClusterName(appName string) string {
+	return fmt.Sprintf("%s-mirrored", appName)
+}
+
+func (s *state) routes(protection *wv1.Protection) []*route.Route {
+	routes := make([]*route.Route, 0)
+	routeAction := &route.RouteAction{
+		Timeout: durationpb.New(0 * time.Second), // zero meaning disabled
+		ClusterSpecifier: &route.RouteAction_Cluster{
+			Cluster: protection.Application.Name,
+		},
+		HostRewriteSpecifier: &route.RouteAction_AutoHostRewrite{
+			AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
+		},
+	}
+
+	mirrorPolicy := protection.Application.Ingress[0].Upstream.MirrorPolicy
+	if mirrorPolicy != nil && mirrorPolicy.Status == wv1.MirrorPolicyStatus_MIRROR_POLICY_STATUS_ENABLED {
+		routeAction.RequestMirrorPolicies = append(
+			routeAction.RequestMirrorPolicies,
+			&route.RouteAction_RequestMirrorPolicy{
+				Cluster: s.mirroredClusterName(protection.Application.Name),
+			},
+		)
+	}
+
+	r := &route.Route{
+		Name: protection.Application.Name,
+		Match: &route.RouteMatch{
+			PathSpecifier: &route.RouteMatch_Prefix{
+				Prefix: "/",
+			},
+		},
+		Action: &route.Route_Route{
+			Route: routeAction,
+		},
+		//Metadata: s.makeMetadata(protection),
+	}
+
+	return append(routes, r)
 }
 
 func (s *state) wafieXprocCluster() *cluster.Cluster {
@@ -119,95 +251,29 @@ func (s *state) wafieXprocCluster() *cluster.Cluster {
 	}
 }
 
-func (s *state) httpFilters(protection *wv1.Protection) []*hcm.HttpFilter {
-	var filters []*hcm.HttpFilter
-	// wafie modsec filter
-	if protection.DesiredState.ModeSec.ProtectionMode == wv1.ProtectionMode_PROTECTION_MODE_ON {
-		if wafieExtProcFilter, err := anypb.New(s.wafieXprocFilter()); err == nil {
-			filters = append(filters, &hcm.HttpFilter{
-				Name: "envoy.filters.http.ext_proc",
-				ConfigType: &hcm.HttpFilter_TypedConfig{
-					TypedConfig: wafieExtProcFilter,
-				},
-			})
-		} else {
-			s.logger.Error("failed to create wafie ext proc filter", zap.Error(err))
-		}
-	}
-	// http filter
-	routerConfig, err := anypb.New(&router.Router{})
-	if err != nil {
-		s.logger.Error("failed to create router config", zap.Error(err))
-	}
-	filters = append(filters, &hcm.HttpFilter{
-		Name: wellknown.Router,
-		ConfigType: &hcm.HttpFilter_TypedConfig{
-			TypedConfig: routerConfig,
-		},
-	})
-	return filters
-}
-
-func (s *state) mirroredClusterName(appName string) string {
-	return fmt.Sprintf("%s-mirrored", appName)
-}
-
-func (s *state) routes(protection *wv1.Protection) []*route.Route {
-	routes := make([]*route.Route, 0)
-	routeAction := &route.RouteAction{
-		Timeout: durationpb.New(0 * time.Second), // zero meaning disabled
-		ClusterSpecifier: &route.RouteAction_Cluster{
-			Cluster: protection.Application.Name,
-		},
-		HostRewriteSpecifier: &route.RouteAction_AutoHostRewrite{
-			AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
-		},
-	}
-
-	mirrorPolicy := protection.Application.Ingress[0].Upstream.MirrorPolicy
-	if mirrorPolicy != nil && mirrorPolicy.Status == wv1.MirrorPolicyStatus_MIRROR_POLICY_STATUS_ENABLED {
-		routeAction.RequestMirrorPolicies = append(
-			routeAction.RequestMirrorPolicies,
-			&route.RouteAction_RequestMirrorPolicy{
-				Cluster: s.mirroredClusterName(protection.Application.Name),
-			},
-		)
-	}
-
-	return append(routes, &route.Route{
-		Name: protection.Application.Name,
-		Match: &route.RouteMatch{
-			PathSpecifier: &route.RouteMatch_Prefix{
-				Prefix: "/",
-			},
-		},
-		Action: &route.Route_Route{
-			Route: routeAction,
-		},
-		RequestHeadersToAdd: s.identifyingHeaders(protection),
-	})
-}
-
-func (s *state) identifyingHeaders(protection *wv1.Protection) []*core.HeaderValueOption {
-	return []*core.HeaderValueOption{
-		{
-			Header: &core.HeaderValue{
-				Key:      "x-wafie-protection-id",
-				RawValue: []byte(strconv.FormatUint(uint64(protection.Id), 10)),
-			},
-			AppendAction: core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
-		},
-	}
-}
+//func (s *state) makeMetadata(protection *wv1.Protection) *core.Metadata {
+//	namespace := "wafie.custom.data"
+//	data := map[string]interface{}{
+//		"protectionId": protection.Id,
+//	}
+//	pStruct, err := structpb.NewStruct(data)
+//	if err != nil {
+//		s.logger.Error("failed to create metadata", zap.Error(err))
+//		return nil
+//	}
+//	return &core.Metadata{
+//		FilterMetadata: map[string]*structpb.Struct{
+//			namespace: pStruct,
+//		},
+//	}
+//}
 
 func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConnectionManager {
 	stdoutLogs, _ := anypb.New(&stream.StdoutAccessLog{})
 	return &hcm.HttpConnectionManager{
-		CodecType:  hcm.HttpConnectionManager_AUTO,
-		StatPrefix: "http",
-		GenerateRequestId: &wrappers.BoolValue{
-			Value: true,
-		},
+		CodecType:         hcm.HttpConnectionManager_AUTO,
+		StatPrefix:        "http",
+		GenerateRequestId: &wrappers.BoolValue{Value: true},
 		AccessLog: []*accesslog.AccessLog{
 			{
 				Name: "envoy.access_loggers.stdout",

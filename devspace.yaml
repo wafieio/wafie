@@ -5,8 +5,10 @@ dev:
     workingDir: /go/src/github.com/wafieio/wafie
     labelSelector:
       app: "wafie-gateway"
+#    container: proxy-ads
     container: proxy-xproc
     devImage: docker.io/dimssss/wafie-xproc
+#    devImage: dimssss/wafie-gateway:latest
     sync:
       - path: ./:./
         waitInitialSync: true
@@ -19,9 +21,13 @@ dev:
         polling: true
     patches:
       - op: remove
-        path: spec.containers.name=gateway.readinessProbe
+        path: spec.containers.name=proxy-ads.readinessProbe
       - op: remove
-        path: spec.containers.name=gateway.livenessProbe
+        path: spec.containers.name=proxy-ads.livenessProbe
+      - op: remove
+        path: spec.containers.name=proxy.readinessProbe
+      - op: remove
+        path: spec.containers.name=proxy.livenessProbe
       - op: add
         path: spec.securityContext
         value:

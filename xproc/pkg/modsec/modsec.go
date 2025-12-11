@@ -233,7 +233,7 @@ func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
 
 func (s *ModeSec) InitEvalRequest(
 	envoyProcessingAttributes map[string]*structpb.Value,
-	hdrs []*corev3.HeaderValue) *EvalRequest {
+	hdrs []*corev3.HeaderValue, protectionId uint32) *EvalRequest {
 	evalRequest := EvalRequest{}
 	attributes := map[string]string{
 		"request.path":     "",
@@ -247,12 +247,11 @@ func (s *ModeSec) InitEvalRequest(
 		}
 	}
 	// set basic intervention parameters
-	//evalRequest.client_ip = C.CString(attributes["request.address"])
-	evalRequest.client_ip = C.CString("192.168.2.101")
+	evalRequest.client_ip = C.CString(attributes["request.address"])
 	evalRequest.uri = C.CString(attributes["request.path"])
 	evalRequest.http_method = C.CString(attributes["request.method"])
 	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes["request.protocol"]))
-	evalRequest.protection_id = C.uint32_t(1)
+	evalRequest.protection_id = C.uint32_t(protectionId)
 	// envoy by default will be using :authority for a host header
 	// ModSecurity need host header
 	hdrs = append(hdrs, &corev3.HeaderValue{Key: "host", RawValue: s.getAuthorityHeader(hdrs)})
