@@ -26,7 +26,8 @@ type ModSec struct {
 }
 
 type ProtectionDesiredState struct {
-	ModSec *ModSec `json:"modSec"`
+	ModSec            *ModSec `json:"modSec"`
+	XffNumTrustedHops uint32  `json:"xffNumTrustedHops"`
 }
 
 type Protection struct {
@@ -73,6 +74,7 @@ func (s *ProtectionDesiredState) FromProto(v1desiredState *wv1.ProtectionDesired
 		Mode:          uint32(v1desiredState.ModeSec.ProtectionMode),
 		ParanoiaLevel: uint32(v1desiredState.ModeSec.ParanoiaLevel),
 	}
+	s.XffNumTrustedHops = v1desiredState.XffNumTrustedHops
 }
 
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {

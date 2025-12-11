@@ -5,24 +5,24 @@ baseHost: ""
 
 # Control Plane API parameters
 api:
-  image: dimssss/wafie-control-plane:latest
+  image: wafieio/api:latest
   svc:
     name: wafie-api
     port: 80
 
 # Discover Agent parameters
 discoveryAgent:
-  image: dimssss/wafie-control-plane:latest
+  image: wafieio/api:latest
 
 # Application Security Gateway parameters
 gateway:
-  ads: dimssss/wafie-gateway:latest
+  ads: wafieio/gateway:latest
   proxy: envoyproxy/envoy:v1.36.2
-  xproc: docker.io/dimssss/wafie-xproc:latest
+  xproc: wafieio/xproc:latest
 
 # Relay parameters
 relay:
-  image: docker.io/dimssss/wafie-relay:latest
+  image: wafieio/relay:latest
 
 # Shared configurations
 config:

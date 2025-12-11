@@ -34,6 +34,7 @@ message ModSec {
 
 message ProtectionDesiredState {
   ModSec mode_sec = 1;
+  uint32 xff_num_trusted_hops = 2;
 }
 
 message Protection {

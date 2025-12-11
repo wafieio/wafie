@@ -151,6 +151,10 @@ func (s *ModeSec) writeRules(protectionId uint32, ruleSetMd5 string, ruleSets []
 }
 
 func (s *ModeSec) reloadCRSRules(ruleSetConfigForReload map[string]uint32) {
+	if len(ruleSetConfigForReload) == 0 {
+		s.logger.Info("rule set config for reload is empty, no crs rules reload required")
+		return
+	}
 	ruleSetConfig := make([]RuleSetConfig, len(ruleSetConfigForReload))
 	defer func() {
 		for i := range ruleSetConfig {

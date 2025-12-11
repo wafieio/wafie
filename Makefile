@@ -1,5 +1,5 @@
 SHELL := /usr/bin/env bash
-
+REGISTRY ?= docker.io/wafieio
 shell:
 	@$(RUN) /bin/bash
 
@@ -10,9 +10,8 @@ api:
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 api.image:
-	podman buildx build -t docker.io/dimssss/wafie-control-plane --platform linux/arm64 -f dockerfiles/controlplane/Dockerfile .
-	podman push docker.io/dimssss/wafie-control-plane
-
+	podman buildx build -t $(REGISTRY)/api --platform linux/arm64 -f apisrv/Containerfile .
+	podman push $(REGISTRY)/api
 
 # gateway build
 .PHONY: gateway
@@ -22,20 +21,16 @@ gateway:
 		-o .bin/gateway gateway/cmd/main.go
 
 gateway.image:
-	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-gateway --platform linux/arm64 -f gateway/Dockerfile .
-	podman push docker.io/dimssss/wafie-gateway
-
-gateway.image.dev:
-	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-gateway-dev --platform linux/arm64 -f gateway/Dockerfile.dev .
-	podman push docker.io/dimssss/wafie-gateway-dev
+	podman buildx build --build-arg ARCH=arm64 -t $(REGISTRY)/gateway --platform linux/arm64 -f gateway/Containerfile .
+	podman push $(REGISTRY)/gateway
 
 .PHONY: xproc
 xproc:
 	go build -o .bin/xproc xproc/cmd/main.go
 
 xproc.image:
-	podman buildx build --build-arg ARCH=arm64 -t docker.io/dimssss/wafie-xproc --platform linux/arm64 -f xproc/Containerfile .
-	podman push docker.io/dimssss/wafie-xproc
+	podman buildx build --build-arg ARCH=arm64 -t $(REGISTRY)/xproc --platform linux/arm64 -f xproc/Containerfile .
+	podman push $(REGISTRY)/xproc
 
 
 .PHONY: discovery
@@ -50,18 +45,9 @@ relay:
 	go build -o .bin/wafie-relay relay/cmd/main.go
 
 relay.image:
-	podman buildx build -t docker.io/dimssss/wafie-relay --platform linux/arm64 -f relay/Containerfile .
-	podman push docker.io/dimssss/wafie-relay
+	podman buildx build -t $(REGISTRY)/relay --platform linux/arm64 -f relay/Containerfile .
+	podman push $(REGISTRY)/relay
 
-build.httpfilter.debug:
-	go build \
-	  -buildmode=c-shared \
-	  -gcflags="all=-N -l" \
-	  -ldflags="-compressdwarf=false -X main.debugMode=true" \
-	  -tags="debug" \
-	  -race \
-	  -o ./wafie-modsec.so \
-	  ./modsecfilter
 
 helm:
 	helm package chart

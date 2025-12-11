@@ -9,12 +9,12 @@ RUN cd api \
 
 FROM golang:1.25.4-bookworm AS builder
 WORKDIR /app
-COPY ../../logger ./logger
-COPY ../../go.mod go.sum ./
-COPY ../../Makefile ./
+COPY ../logger ./logger
+COPY ../go.mod go.sum ./
+COPY ../Makefile ./
 COPY --from=protobuf-builder /app/api ./api
-COPY ../../apisrv ./apisrv
-COPY ../../discovery ./discovery
+COPY ../apisrv ./apisrv
+COPY ../discovery ./discovery
 RUN make api discovery
 
 FROM debian:bookworm-slim

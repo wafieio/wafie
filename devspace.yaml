@@ -7,7 +7,7 @@ dev:
       app: "wafie-gateway"
 #    container: proxy-ads
     container: proxy-xproc
-    devImage: docker.io/dimssss/wafie-xproc
+    devImage: docker.io/wafieio/xproc
 #    devImage: dimssss/wafie-gateway:latest
     sync:
       - path: ./:./
