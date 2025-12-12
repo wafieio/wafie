@@ -6,7 +6,6 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/wafieio/wafie/xproc/pkg/assets"
 	"github.com/wafieio/wafie/xproc/pkg/modsec"
 	"go.uber.org/zap"
@@ -31,15 +30,6 @@ func NewExternalProcessor(apiAddr string, logger *zap.Logger) *ExternalProcessor
 		modsec: modsec.NewModSec(apiAddr, logger),
 		assets: assets.New(logger),
 		logger: logger,
-	}
-}
-
-func (s *ExternalProcessor) requestAttributes(requestAttr map[string]*structpb.Struct) {
-	attributes := []string{"request.path", "source.address", "request.protocol", "request.method"}
-	for _, attribute := range attributes {
-		if attrVal, ok := requestAttr["envoy.filters.http.ext_proc"].GetFields()[attribute]; ok {
-			s.logger.Info("request attributes", zap.String(attribute, attrVal.GetStringValue()))
-		}
 	}
 }
 

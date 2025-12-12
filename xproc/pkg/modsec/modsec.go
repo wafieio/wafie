@@ -30,6 +30,8 @@ import (
 type EvalRequest C.WafieEvaluationRequest
 type RuleSetConfig C.WafieRuleSetConfig
 
+type EnvoyRequestAttributes map[string]string
+
 type ModeSec struct {
 	logger            *zap.Logger
 	protectionClient  wv1c.ProtectionServiceClient
@@ -57,6 +59,39 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 	modSec.runRulesetWatcher()
 	// return modeSec instance
 	return modSec
+}
+
+func NewEnvoyRequestAttributes(envoyProcessingAttributes map[string]*structpb.Value) EnvoyRequestAttributes {
+	attributes := map[string]string{
+		"request.path":     "",
+		"source.address":   "",
+		"request.protocol": "",
+		"request.method":   "",
+	}
+	for attributeKey, _ := range attributes {
+		if attrVal, ok := envoyProcessingAttributes[attributeKey]; ok {
+			attributes[attributeKey] = attrVal.GetStringValue()
+		}
+	}
+	return attributes
+}
+
+func (a EnvoyRequestAttributes) RequestPath() string {
+	return a["request.path"]
+}
+
+func (a EnvoyRequestAttributes) SourceAddress() string {
+	// envoy stores both ip:port in the source.address
+	envoySourceAddrAttribute := strings.Split(a["source.address"], ":")
+	return envoySourceAddrAttribute[0]
+}
+
+func (a EnvoyRequestAttributes) RequestProtocol() string {
+	return a["request.protocol"]
+}
+
+func (a EnvoyRequestAttributes) RequestMethod() string {
+	return a["request.method"]
 }
 
 func (s *ModeSec) listProtections() []*wv1.Protection {
@@ -235,10 +270,7 @@ func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
 	C.free(unsafe.Pointer(evalRequest.headers))
 }
 
-func (s *ModeSec) InitEvalRequest(
-	envoyProcessingAttributes map[string]*structpb.Value,
-	hdrs []*corev3.HeaderValue, protectionId uint32) *EvalRequest {
-	evalRequest := EvalRequest{}
+func (s *ModeSec) requestAttributes(envoyProcessingAttributes map[string]*structpb.Value) map[string]string {
 	attributes := map[string]string{
 		"request.path":     "",
 		"source.address":   "",
@@ -250,11 +282,19 @@ func (s *ModeSec) InitEvalRequest(
 			attributes[attributeKey] = attrVal.GetStringValue()
 		}
 	}
+	return attributes
+}
+
+func (s *ModeSec) InitEvalRequest(
+	envoyProcessingAttributes map[string]*structpb.Value,
+	hdrs []*corev3.HeaderValue, protectionId uint32) *EvalRequest {
+	evalRequest := EvalRequest{}
+	attributes := NewEnvoyRequestAttributes(envoyProcessingAttributes)
 	// set basic intervention parameters
-	evalRequest.client_ip = C.CString(attributes["source.address"])
-	evalRequest.uri = C.CString(attributes["request.path"])
-	evalRequest.http_method = C.CString(attributes["request.method"])
-	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes["request.protocol"]))
+	evalRequest.client_ip = C.CString(attributes.SourceAddress())
+	evalRequest.uri = C.CString(attributes.RequestPath())
+	evalRequest.http_method = C.CString(attributes.RequestMethod())
+	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes.RequestProtocol()))
 	evalRequest.protection_id = C.uint32_t(protectionId)
 	// envoy by default will be using :authority for a host header
 	// ModSecurity need host header
