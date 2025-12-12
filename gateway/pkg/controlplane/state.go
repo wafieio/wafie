@@ -199,7 +199,7 @@ func (s *state) routes(protection *wv1.Protection) []*route.Route {
 			Route: routeAction,
 		},
 	}
-	
+
 	return append(routes, r)
 }
 
@@ -256,7 +256,7 @@ func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConne
 		CodecType:         hcm.HttpConnectionManager_AUTO,
 		StatPrefix:        "http",
 		GenerateRequestId: &wrappers.BoolValue{Value: true},
-		UseRemoteAddress:  &wrappers.BoolValue{Value: true},
+		UseRemoteAddress:  &wrappers.BoolValue{Value: false},
 		XffNumTrustedHops: protection.DesiredState.XffNumTrustedHops,
 		AccessLog: []*accesslog.AccessLog{
 			{
