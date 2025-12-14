@@ -1,16 +1,19 @@
 package models
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"text/template"
+	"time"
+
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	applogger "github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"io"
-	"time"
 )
 
 const (
@@ -130,7 +133,23 @@ func (r *CRSRepository) CloneCrsProfileToCrsRuleSet(profileName string, crsVersi
 	return nil
 }
 
+func (r *CRSRepository) ProtectionDesiredState(crsVersionId uint) (*ProtectionDesiredState, error) {
+	p := &Protection{}
+	if err := r.db.Model(&Protection{}).
+		Preload("CrsVersions", "id = ? AND status = ?", crsVersionId, 2).
+		First(p).Error; err != nil {
+		return nil, err
+	}
+	//err := ruleSet.Render(&p.DesiredState)
+	return &p.DesiredState, nil
+}
+
 func (v *CrsVersion) ToProto() *wv1.CrsVersion {
+	repo := NewCrsRepository(nil, nil)
+	data, err := repo.ProtectionDesiredState(v.ID)
+	if err != nil {
+		repo.logger.Error(err.Error())
+	}
 	id := uint32(v.ID)
 	crsVersion := &wv1.CrsVersion{
 		Id:           &id,
@@ -140,7 +159,7 @@ func (v *CrsVersion) ToProto() *wv1.CrsVersion {
 	}
 	// set crs rules sets
 	for _, ruleSet := range v.CrsRuleSets {
-		crsVersion.CrsRuleSets = append(crsVersion.CrsRuleSets, ruleSet.ToProto())
+		crsVersion.CrsRuleSets = append(crsVersion.CrsRuleSets, ruleSet.ToProto(data))
 	}
 	return crsVersion
 }
@@ -157,12 +176,33 @@ func (v *CrsVersion) FromProto(crsVersion *wv1.CrsVersion) {
 	v.ProtectionID = uint(crsVersion.ProtectionId)
 }
 
-func (s *CrsRuleSet) ToProto() *wv1.CrsRuleSet {
+func (s *CrsRuleSet) ToProto(data *ProtectionDesiredState) *wv1.CrsRuleSet {
+	renderedCrsFileContent, err := s.Render(data.ModSec)
+	if err != nil {
+		NewCrsRepository(nil, nil).
+			logger.
+			Error(err.Error())
+	}
 	return &wv1.CrsRuleSet{
 		Id:             uint32(s.ID),
 		CrsFileName:    s.CrsFileName,
-		CrsFileContent: s.CrsFileContent,
+		CrsFileContent: renderedCrsFileContent,
 		CrsVersionId:   uint32(s.CrsVersionID),
 		Md5:            s.MD5,
 	}
+}
+
+func (s *CrsRuleSet) Render(data *ModSec) (renderedCrsRules string, err error) {
+
+	tmpl, err := template.New(s.CrsFileName).
+		Delims("{{{", "}}}").
+		Parse(s.CrsFileContent)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err = tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

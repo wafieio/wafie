@@ -1,8 +1,9 @@
 package apiserver
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"github.com/wafieio/wafie/apisrv/internal/models"

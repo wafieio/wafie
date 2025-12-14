@@ -8,16 +8,10 @@ package modsec
 */
 import "C"
 import (
-	"connectrpc.com/connect"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	structpb "github.com/golang/protobuf/ptypes/struct"
-	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
-	wv1c "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
@@ -25,6 +19,13 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	"connectrpc.com/connect"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
+	wv1c "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
+	"go.uber.org/zap"
 )
 
 type EvalRequest C.WafieEvaluationRequest

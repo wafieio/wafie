@@ -4,11 +4,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	applogger "github.com/wafieio/wafie/logger"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Endpoint struct {

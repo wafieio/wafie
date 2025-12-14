@@ -2,6 +2,7 @@ package assets
 
 import (
 	"embed"
+
 	"go.uber.org/zap"
 )
 

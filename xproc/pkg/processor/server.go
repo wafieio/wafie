@@ -3,15 +3,16 @@ package processor
 import "C"
 import (
 	"fmt"
+	"io"
+	"log"
+	"strconv"
+
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/wafieio/wafie/xproc/pkg/assets"
 	"github.com/wafieio/wafie/xproc/pkg/modsec"
 	"go.uber.org/zap"
-	"io"
-	"log"
-	"strconv"
 )
 
 const (

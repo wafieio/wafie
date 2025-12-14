@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+
 	"github.com/wafieio/wafie/apisrv/internal/models/assets/modsec"
 	"github.com/wafieio/wafie/apisrv/internal/models/assets/sql"
 	"go.uber.org/zap"

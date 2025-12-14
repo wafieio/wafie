@@ -1,12 +1,13 @@
 package apiserver
 
 import (
-	"connectrpc.com/connect"
 	"context"
+	"testing"
+
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	cwafv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	applogger "github.com/wafieio/wafie/logger"
-	"testing"
 )
 
 func TestCreateApplication(t *testing.T) {

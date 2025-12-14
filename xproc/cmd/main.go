@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net"
+	"os"
+
 	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -8,8 +11,6 @@ import (
 	"github.com/wafieio/wafie/xproc/pkg/processor"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"net"
-	"os"
 )
 
 var (
