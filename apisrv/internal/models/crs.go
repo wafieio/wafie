@@ -47,7 +47,6 @@ type CrsRuleSet struct {
 	CrsFileContent string     `gorm:"not null"`
 	CrsVersionID   uint       `gorm:"not null"`
 	CrsVersion     CrsVersion `gorm:"foreignKey:CrsVersionID;references:ID"`
-	MD5            string     `gorm:"not null"`
 	CreatedAt      time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt      time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
 }
@@ -117,15 +116,10 @@ func (r *CRSRepository) CloneCrsProfileToCrsRuleSet(profileName string, crsVersi
 		return fmt.Errorf("profile %s does not exist", profileName)
 	}
 	for _, rule := range rules {
-		h := md5.New()
-		if _, err := io.WriteString(h, rule.CrsFileContent); err != nil {
-			return err
-		}
 		if err := r.CreateCrsRuleSet(&CrsRuleSet{
 			CrsFileName:    rule.CrsFileName,
 			CrsFileContent: rule.CrsFileContent,
 			CrsVersionID:   crsVersionId,
-			MD5:            hex.EncodeToString(h.Sum(nil)),
 		}); err != nil {
 			return err
 		}
@@ -159,7 +153,9 @@ func (v *CrsVersion) ToProto() *wv1.CrsVersion {
 	}
 	// set crs rules sets
 	for _, ruleSet := range v.CrsRuleSets {
-		crsVersion.CrsRuleSets = append(crsVersion.CrsRuleSets, ruleSet.ToProto(data))
+		if protoRule := ruleSet.ToProto(data); protoRule != nil {
+			crsVersion.CrsRuleSets = append(crsVersion.CrsRuleSets, protoRule)
+		}
 	}
 	return crsVersion
 }
@@ -177,18 +173,25 @@ func (v *CrsVersion) FromProto(crsVersion *wv1.CrsVersion) {
 }
 
 func (s *CrsRuleSet) ToProto(data *ProtectionDesiredState) *wv1.CrsRuleSet {
+	l := NewCrsRepository(nil, nil).logger
+	// render rule file
 	renderedCrsFileContent, err := s.Render(data.ModSec)
 	if err != nil {
-		NewCrsRepository(nil, nil).
-			logger.
-			Error(err.Error())
+		l.Error(err.Error())
+		return nil
+	}
+	// calculate rule MD5
+	h := md5.New()
+	if _, err := io.WriteString(h, renderedCrsFileContent); err != nil {
+		l.Error(err.Error())
+		return nil
 	}
 	return &wv1.CrsRuleSet{
 		Id:             uint32(s.ID),
 		CrsFileName:    s.CrsFileName,
 		CrsFileContent: renderedCrsFileContent,
 		CrsVersionId:   uint32(s.CrsVersionID),
-		Md5:            s.MD5,
+		Md5:            hex.EncodeToString(h.Sum(nil)),
 	}
 }
 

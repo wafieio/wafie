@@ -42,14 +42,6 @@ type ModeSec struct {
 func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 	// init wafie library
 	C.wafie_init()
-	// init ruleset
-	//ruleSetConfig := []RuleSetConfig{
-	//	{
-	//		config_path:   C.CString("/config"),
-	//		protection_id: C.int(1),
-	//	},
-	//}
-	//C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), 0)
 	// init mod sec instance
 	modSec := &ModeSec{
 		protectionClient:  wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
