@@ -46,7 +46,7 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 	modSec := &ModeSec{
 		protectionClient:  wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
 		logger:            logger,
-		ruleSetBaseConfig: "/config",
+		ruleSetBaseConfig: "/rules",
 	}
 	// start the ruleset watcher
 	modSec.runRulesetWatcher()
@@ -152,7 +152,7 @@ func (s *ModeSec) shouldWrite(rulesDir string) (bool, error) {
 
 func (s *ModeSec) writeRules(protectionId uint32, ruleSetMd5 string, ruleSets []*wv1.CrsRuleSet) (reloadRequire bool, err error) {
 	// check for a changes in a rule set
-	rulesDir := fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, protectionId)
+	rulesDir := s.rulesDir(protectionId, ruleSetMd5)
 	shouldWrite, err := s.shouldWrite(rulesDir)
 	if err != nil {
 		return false, err
@@ -196,7 +196,41 @@ func (s *ModeSec) reloadCRSRules(ruleSetConfigForReload map[string]uint32) {
 		idx++
 	}
 	C.wafie_load_rule_sets((*C.WafieRuleSetConfig)(&ruleSetConfig[0]), C.int(len(ruleSetConfigForReload)))
+}
 
+func (s *ModeSec) cleanupRules(ruleSetConfigForReload map[string]uint32) {
+	if len(ruleSetConfigForReload) == 0 {
+		s.logger.Info("rule set config for reload is empty, no crs rules reload required")
+		return
+	}
+	for activeProtectionPath, protectionId := range ruleSetConfigForReload {
+		entries, err := os.ReadDir(s.protectionBaseDir(protectionId))
+		if err != nil {
+			s.logger.Error("error reading rules directory",
+				zap.String("activeProtectionPath", activeProtectionPath), zap.Error(err))
+			continue
+		}
+		for _, entry := range entries {
+			inactiveProtectionPath := filepath.Join(s.protectionBaseDir(protectionId), entry.Name())
+			// not active protection path - delete it
+			if activeProtectionPath != inactiveProtectionPath {
+				s.logger.Info("removing inactive protection path",
+					zap.String("inactiveProtectionPath", inactiveProtectionPath))
+				if err := os.RemoveAll(inactiveProtectionPath); err != nil {
+					s.logger.Error("error removing rules directory",
+						zap.String("protectionPath", inactiveProtectionPath), zap.Error(err))
+				}
+			}
+		}
+	}
+}
+
+func (s *ModeSec) protectionBaseDir(protectionId uint32) string {
+	return fmt.Sprintf("%s/%d", s.ruleSetBaseConfig, protectionId)
+}
+
+func (s *ModeSec) rulesDir(protectionId uint32, ruleSetMd5 string) string {
+	return fmt.Sprintf("%s/%s", s.protectionBaseDir(protectionId), ruleSetMd5)
 }
 
 func (s *ModeSec) runRulesetWatcher() {
@@ -206,6 +240,7 @@ func (s *ModeSec) runRulesetWatcher() {
 			time.Sleep(3 * time.Second)
 			reloadRequire := false
 			ruleSetConfigForReload := map[string]uint32{}
+
 			for _, p := range s.listProtections() {
 				rules, err := s.getProtectionRules(p.Id)
 				if err != nil {
@@ -234,11 +269,12 @@ func (s *ModeSec) runRulesetWatcher() {
 				} else if reload {
 					reloadRequire = true
 				}
-				ruleSetConfigForReload[fmt.Sprintf("%s/%s/%d", s.ruleSetBaseConfig, ruleSetMd5, p.Id)] = p.Id
+				ruleSetConfigForReload[s.rulesDir(p.Id, ruleSetMd5)] = p.Id
 			}
 			if reloadRequire || firstRun {
 				firstRun = false
 				s.reloadCRSRules(ruleSetConfigForReload)
+				s.cleanupRules(ruleSetConfigForReload)
 			}
 		}
 	}()
