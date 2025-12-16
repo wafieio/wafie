@@ -1,4 +1,4 @@
-FROM docker.io/dimssss/modsec as libwafie
+FROM docker.io/wafieio/modsec as libwafie
 
 FROM bufbuild/buf AS protobuf-builder
 WORKDIR /app

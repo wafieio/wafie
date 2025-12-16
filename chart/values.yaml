@@ -24,9 +24,15 @@ gateway:
 relay:
   image: wafieio/relay:latest
 
+console:
+  enabled: true
+  image: docker.io/wafieio/console:latest
+
+
 # Shared configurations
 config:
   apiAddr: ""
+
 
 # postgresql configurations
 postgresql:
