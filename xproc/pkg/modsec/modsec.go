@@ -37,6 +37,7 @@ type ModeSec struct {
 	logger            *zap.Logger
 	protectionClient  wv1c.ProtectionServiceClient
 	ruleSetBaseConfig string
+	auditLogFile      string
 }
 
 func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
@@ -47,9 +48,12 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 		protectionClient:  wv1c.NewProtectionServiceClient(http.DefaultClient, apiAddr),
 		logger:            logger,
 		ruleSetBaseConfig: "/rules",
+		auditLogFile:      "/data/audit/modsec.log", // statically configured, must be the same as in modsecurity.conf
 	}
 	// start the ruleset watcher
 	modSec.runRulesetWatcher()
+	// start audit log rotation
+	modSec.runAuditLogRotation()
 	// return modeSec instance
 	return modSec
 }
@@ -236,8 +240,9 @@ func (s *ModeSec) rulesDir(protectionId uint32, ruleSetMd5 string) string {
 func (s *ModeSec) runRulesetWatcher() {
 	firstRun := true
 	go func() {
-		for {
-			time.Sleep(3 * time.Second)
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
 			reloadRequire := false
 			ruleSetConfigForReload := map[string]uint32{}
 
@@ -390,4 +395,30 @@ func (s *ModeSec) EvaluateBody(evalRequest *EvalRequest) (intervened bool) {
 		return true
 	}
 	return false
+}
+
+func (s *ModeSec) runAuditLogRotation() {
+	go func() {
+		var maxAuditLogSize int64 = 5 * 1024 * 1024 // 5 MB
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			info, err := os.Stat(s.auditLogFile)
+			if os.IsNotExist(err) {
+				continue
+			}
+			if err != nil {
+				s.logger.Warn("failed to stat audit log file")
+				continue
+			}
+			if info.Size() >= maxAuditLogSize {
+				err := os.Truncate(s.auditLogFile, 0)
+				if err != nil {
+					s.logger.Error("failed to truncate audit log file", zap.Error(err))
+				} else {
+					s.logger.Info("audit log file has been rotated", zap.Int64("size", info.Size()))
+				}
+			}
+		}
+	}()
 }

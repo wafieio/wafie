@@ -39,14 +39,6 @@ var startCmd = &cobra.Command{
 				viper.GetString("namespace"),
 				viper.GetString("xproc-socket"),
 			).Start()
-
-		if !viper.GetBool("envoy-xds-srv-only") {
-			logger.Info("starting Envoy XDS server")
-			// start envoy proxy and modsec (wafie-modsec.so) log rotation
-			go controlplane.
-				NewSupervisor(logger).
-				Start()
-		}
 		// handle interrupts
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
