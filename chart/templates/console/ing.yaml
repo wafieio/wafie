@@ -1,0 +1,22 @@
+{{if .Values.console.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wafie-console
+  namespace: {{.Release.Namespace}}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: wafie-console.{{.Values.baseHost}}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wafie-console
+                port:
+                  number: 3000
+{{- end }}

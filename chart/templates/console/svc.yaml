@@ -1,0 +1,17 @@
+{{if .Values.console.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: wafie-console
+  namespace: {{.Release.Namespace}}
+  labels:
+    app: wafie-console
+spec:
+  type: ClusterIP
+  selector:
+    app: wafie-console
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+{{- end }}

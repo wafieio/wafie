@@ -1,0 +1,18 @@
+{{if .Values.console.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wafie-console-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # WAFie API - Internal K8s service URL
+  WAFIE_API_URL: "http://wafie-api.{{.Release.Namespace}}.svc"
+  # OpenSearch - Internal K8s service URL
+  WAFIE_OPENSEARCH_URL: "https://opensearch-cluster-master.{{.Release.Namespace}}.svc:9200"
+  # OpenSearch username
+  WAFIE_OPENSEARCH_USER: "admin"
+  # OpenSearch password - REPLACE WITH YOUR ACTUAL PASSWORD
+  WAFIE_OPENSEARCH_PASSWORD: "8NybEHCU81IzgWhx"
+  # Node.js: Allow self-signed certificates (OpenSearch)
+  NODE_TLS_REJECT_UNAUTHORIZED: "0"
+{{- end }}

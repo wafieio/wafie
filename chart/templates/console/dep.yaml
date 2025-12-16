@@ -1,0 +1,49 @@
+{{if .Values.console.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wafie-console
+  namespace: {{.Release.Namespace}}
+  labels:
+    app: wafie-console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wafie-console
+  template:
+    metadata:
+      labels:
+        app: wafie-console
+    spec:
+      containers:
+        - name: wafie-console
+          image: {{.Values.console.image}}
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: wafie-console-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Health checks
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+{{- end }}
