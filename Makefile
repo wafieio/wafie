@@ -10,8 +10,11 @@ api:
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 api.image:
-	podman buildx build -t $(REGISTRY)/api --platform linux/arm64 -f apisrv/Containerfile .
-	podman push $(REGISTRY)/api
+	podman build \
+      --manifest api \
+      --platform linux/arm64,linux/amd64 \
+      -f apisrv/Containerfile .
+	podman manifest push api $(REGISTRY)/api:latest
 
 # gateway build
 .PHONY: gateway
@@ -21,16 +24,22 @@ gateway:
 		-o .bin/gateway gateway/cmd/main.go
 
 gateway.image:
-	podman buildx build --build-arg ARCH=arm64 -t $(REGISTRY)/gateway --platform linux/arm64 -f gateway/Containerfile .
-	podman push $(REGISTRY)/gateway
+	podman build \
+        --manifest gateway \
+        --platform linux/arm64,linux/amd64 \
+        -f gateway/Containerfile .
+	podman manifest push gateway $(REGISTRY)/gateway:latest
 
 .PHONY: xproc
 xproc:
 	go build -o .bin/xproc xproc/cmd/main.go
 
 xproc.image:
-	podman buildx build --build-arg ARCH=arm64 -t $(REGISTRY)/xproc --platform linux/arm64 -f xproc/Containerfile .
-	podman push $(REGISTRY)/xproc
+	podman build \
+        --manifest xproc \
+        --platform linux/arm64,linux/amd64 \
+        -f xproc/Containerfile .
+	podman manifest push xproc $(REGISTRY)/xproc:latest
 
 
 .PHONY: discovery
@@ -45,8 +54,12 @@ relay:
 	go build -o .bin/wafie-relay relay/cmd/main.go
 
 relay.image:
-	podman buildx build -t $(REGISTRY)/relay --platform linux/arm64 -f relay/Containerfile .
-	podman push $(REGISTRY)/relay
+	podman build \
+      --manifest relay \
+      --secret id=buf_auth_token,src=./api/buf_auth_token \
+      --platform linux/arm64,linux/amd64 \
+      -f relay/Containerfile .
+	podman manifest push relay $(REGISTRY)/relay:latest
 
 
 helm:

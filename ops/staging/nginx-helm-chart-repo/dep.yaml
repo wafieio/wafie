@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: helm-charts
+  namespace: charts
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: charts
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: helm
+          image: alpine/helm
+          command:
+            - /bin/bash
+            - -c
+            - sleep inf
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/html"
+              name: helm-charts-vol
+        - name: nginx
+          image: nginx:1.29.4
+          ports:
+            - containerPort: 80
+          volumeMounts:
+          - mountPath: "/usr/share/nginx/html"
+            name: helm-charts-vol
+      volumes:
+      - name: helm-charts-vol
+        persistentVolumeClaim:
+          claimName: helm-charts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: charts
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-charts
+  namespace: charts
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx # Important: specifies which controller handles this
+  rules:
+    - host: charts.wafie.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  number: 80
+  tls:
+  - hosts:
+    - charts.wafie.io
+    secretName: charts-cert
+
+

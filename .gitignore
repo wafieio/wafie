@@ -12,3 +12,5 @@ bin
 .bin
 .devspace
 ops/.secrets
+api/buf_auth_token
+podman-build-*

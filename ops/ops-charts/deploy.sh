@@ -6,6 +6,15 @@ helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set ingress.hostname=wp.10.100.102.110.nip.io \
   --set service.type=ClusterIP
 
+helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
+  --set image.repository=bitnamilegacy/wordpress \
+  --set mariadb.image.repository=bitnamilegacy/mariadb \
+  --set global.security.allowInsecureImages=true \
+  --set ingress.enabled=true \
+  --set ingress.hostname=wp.$(ipconfig getifaddr en0).nip.io \
+  --set service.type=ClusterIP
+
+.staging.wafie.io
 
 helm install wafie-opensearch oci://registry-1.docker.io/bitnamicharts/opensearch \
   --set image.repository=bitnamilegacy/wordpress \

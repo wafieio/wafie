@@ -1,8 +1,9 @@
 FROM bufbuild/buf AS protobuf-builder
 WORKDIR /app
 ADD ../api ./api
-ADD ../Makefile ./
-RUN cd api \
+RUN --mount=type=secret,id=buf_auth_token \
+    export BUF_TOKEN=$(cat /run/secrets/buf_auth_token) \
+    && cd api \
     && buf dep update \
     && buf lint \
     && buf generate

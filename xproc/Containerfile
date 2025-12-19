@@ -3,15 +3,16 @@ FROM docker.io/wafieio/modsec as libwafie
 FROM bufbuild/buf AS protobuf-builder
 WORKDIR /app
 ADD ../api ./api
-ADD ../Makefile ./
-RUN cd api \
+RUN --mount=type=secret,id=buf_auth_token \
+    export BUF_TOKEN=$(cat /run/secrets/buf_auth_token) \
+    && cd api \
     && buf dep update \
     && buf lint \
     && buf generate
 
 FROM debian:bookworm-slim
-ARG ARCH
-ENV GO_VERSION="go1.25.4.linux-${ARCH}.tar.gz"
+ARG TARGETARCH
+ENV GO_VERSION="go1.25.4.linux-${TARGETARCH}.tar.gz"
 ENV GOBIN="/go/bin"
 ENV PATH="${PATH}:${GOBIN}:/usr/local/go/bin"
 ENV GOPATH="/go"
