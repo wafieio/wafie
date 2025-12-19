@@ -9,7 +9,7 @@ ingress:
 .PHONY: cert-manager
 cert-manager:
 	cert-manager/deploy.sh
-	kubectl apply -f cluster-issuer.yaml
+	kubectl apply -f cert-manager/cluster-issuer.yaml
 
 .PHONY: charts-repo
 charts-repo:
