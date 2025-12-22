@@ -3,9 +3,11 @@ kind: Ingress
 metadata:
   name: httpbin
   namespace: {{.Release.Namespace}}
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   rules:
-    - host: "httpbin-{{.Values.baseHost}}"
+    - host: "{{.Values.host}}"
       http:
         paths:
           - backend:
@@ -15,3 +17,7 @@ spec:
                   name: http
             path: /
             pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - "{{.Values.host}}"
+      secretName: charts-cert

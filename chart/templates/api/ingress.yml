@@ -3,9 +3,10 @@ kind: Ingress
 metadata:
   name: wafie-api
   namespace: {{.Release.Namespace}}
+  annotations: {{ .Values.api.ingress.annotations | toJson }}
 spec:
   rules:
-    - host: "wafie-api-{{ .Values.baseHost }}"
+    - host: "{{ .Values.api.ingress.host }}"
       http:
         paths:
           - backend:
@@ -15,3 +16,9 @@ spec:
                   name: api-server
             path: /
             pathType: ImplementationSpecific
+{{- if .Values.api.ingress.tls }}
+  tls:
+    - hosts:
+        - "{{ .Values.api.ingress.host }}"
+      secretName: {{ .Values.api.svc.name }}-certs
+{{- end }}

@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   # WAFie API - Internal K8s service URL
-  WAFIE_API_URL: "http://wafie-api.{{.Release.Namespace}}.svc"
+  WAFIE_API_URL: "http://{{.Values.api.svc.name}}.{{.Release.Namespace}}.svc"
   # OpenSearch - Internal K8s service URL
   WAFIE_OPENSEARCH_URL: "https://opensearch-cluster-master.{{.Release.Namespace}}.svc:9200"
   # OpenSearch username

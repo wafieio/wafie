@@ -64,10 +64,14 @@ relay.image:
 
 helm:
 	helm package chart
-	charts_pod=$$(kubectl get pod -lapp=nginx -ncharts --kubeconfig ~/.kube/wafie-staging -o jsonpath="{.items[0].metadata.name}"); \
-	kubectl cp wafie-0.0.1.tgz $$charts_pod:/usr/share/nginx/html -c helm -ncharts --kubeconfig ~/.kube/wafie-staging; \
-	kubectl exec $$charts_pod -c helm -ncharts --kubeconfig ~/.kube/wafie-staging -- /bin/bash -c "cd /usr/share/nginx/html && helm repo index ."
-	rm wafie-0.0.1.tgz
+	@kubeconfig=$$(readlink -f ~/.kube/wafie-stg); \
+	charts_pod=$$(kubectl get pod -lapp=nginx -ncharts --kubeconfig "$$kubeconfig" -o jsonpath="{.items[0].metadata.name}"); \
+	kubectl cp wafie-0.0.1.tgz $$charts_pod:/usr/share/nginx/html -c helm -ncharts --kubeconfig $$kubeconfig; \
+	kubectl exec $$charts_pod -c helm -ncharts --kubeconfig $$kubeconfig -- /bin/bash -c "cd /usr/share/nginx/html && helm repo index ."
+	#scp wafie-0.0.1.tgz stg:/var/www/charts
+	#ssh root@charts.wafie.io "helm repo index /var/www/charts"
+	#rm wafie-0.0.1.tgz
+
 
 .PHONY: proto
 proto:

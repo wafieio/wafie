@@ -3,8 +3,10 @@ helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set mariadb.image.repository=bitnamilegacy/mariadb \
   --set global.security.allowInsecureImages=true \
   --set ingress.enabled=true \
-  --set ingress.hostname=wp.10.100.102.110.nip.io \
-  --set service.type=ClusterIP
+  --set ingress.hostname=wp.stg.wafie.io \
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
+  --set service.type=ClusterIP \
+  --kubeconfig ~/.kube/wafie-stg
 
 helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set image.repository=bitnamilegacy/wordpress \
@@ -45,7 +47,9 @@ helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set mariadb.volumePermissions.enabled=true
 
 
-
+helm template wafie wafie/wafie \
+  --set api.host=api.staging.wafie.io \
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod
 
 
 
@@ -54,7 +58,8 @@ helm template oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set mariadb.image.repository=bitnamilegacy/mariadb \
   --set global.security.allowInsecureImages=true \
   --set ingress.enabled=true \
-  --set ingress.hostname=wp.10.100.102.89.nip.io \
+  --set ingress.hostname=wp.staging.wafie.io \
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
   --set service.type=ClusterIP | grep image
 
 

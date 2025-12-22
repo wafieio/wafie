@@ -1,6 +1,25 @@
 # Installations steps
 
-### Create local Kind cluster 
+### [Production Deployment](#production-deployment) 
+
+```bash
+helm repo add wafie https://charts.wafie.io
+helm repo update 
+helm install wafie wafie/wafie \
+  --set api.ingress.host="wafie-api.stg.wafie.io" \
+  --set api.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
+  --set console.ingress.host="wafie-console.stg.wafie.io" \
+  --set console.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod
+```
+
+### [Local Dev Deployment](#local-dev-deployment)
+
+### Production deployment
+
+
+
+
+#### Local Dev Deployment
 ```bash
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
@@ -46,7 +65,8 @@ Deploy wafie helm chart
 helm repo add wafie https://charts.wafie.io
 helm repo update 
 helm install wafie wafie/wafie \
-  --set baseHost=$(ipconfig getifaddr en0).nip.io
+  --set api.ingress.host=wafie-api.$(ipconfig getifaddr en0).nip.io \
+  --set console.ingress.host=wafie-console..$(ipconfig getifaddr en0).nip.io
 ```
 
 Check all wafie pods are running 
@@ -64,28 +84,4 @@ helm install od wafie/opensearch-dashboards \
   --set ingress.hosts[0].paths[0].backend.service.port.name="http"
 ```
 
-List all discovered applications
-```bash
-curl --location 'http://wafie-api.192.168.1.51.nip.io/wafie.v1.ApplicationService/ListApplications' \
---header 'Content-Type: application/json' \
---data '{
-    "options": {
-        "include_ingress": false
-    }
-}'
-```
-Enable protection for selected application 
-```bash
-curl --location 'http://wafie-api.192.168.1.51.nip.io/wafie.v1.ProtectionService/CreateProtection' \
---header 'Content-Type: application/json' \
---data '{
-    "application_id": 1,
-    "desired_state": {
-        "mode_sec": {
-            "paranoia_level": "PARANOIA_LEVEL_4",
-            "protection_mode": "PROTECTION_MODE_ON"
-        }
-    },
-    "protection_mode": "PROTECTION_MODE_ON"
-}'
-```
+

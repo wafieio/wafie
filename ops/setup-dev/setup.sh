@@ -31,9 +31,7 @@ kubectl wait --for=condition=ready pod \
  -ningress-nginx \
  --timeout=300s
 
-helm repo update
-helm install wafie wafie/wafie \
-  --set baseHost=$(ipconfig getifaddr en0).nip.io
+
 
 helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
   --set image.repository=bitnamilegacy/wordpress \

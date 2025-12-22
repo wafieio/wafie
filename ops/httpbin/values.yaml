@@ -1,2 +1,2 @@
-baseHost: ""
+host: ""
 image: docker.io/mccutchen/go-httpbin:v2.15.0

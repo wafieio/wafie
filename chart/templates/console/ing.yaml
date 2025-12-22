@@ -4,12 +4,11 @@ kind: Ingress
 metadata:
   name: wafie-console
   namespace: {{.Release.Namespace}}
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  annotations: {{ .Values.console.ingress.annotations | toJson }}
 spec:
   ingressClassName: nginx
   rules:
-    - host: wafie-console.{{.Values.baseHost}}
+    - host: {{.Values.console.ingress.host}}
       http:
         paths:
           - path: /
@@ -19,4 +18,10 @@ spec:
                 name: wafie-console
                 port:
                   number: 3000
+{{- if .Values.console.ingress.tls }}
+  tls:
+    - hosts:
+        - "{{ .Values.console.ingress.host }}"
+      secretName: wafie-console-certs
+{{- end }}
 {{- end }}

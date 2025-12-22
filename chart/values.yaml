@@ -1,11 +1,14 @@
 
 # base host which will be used as a base domain
 # for different services
-baseHost: ""
 
 # Control Plane API parameters
 api:
   image: wafieio/api:latest
+  ingress:
+    tls: true
+    host: ""
+    annotations: {}
   svc:
     name: wafie-api
     port: 80
@@ -27,6 +30,10 @@ relay:
 console:
   enabled: true
   image: docker.io/wafieio/console:latest
+  ingress:
+    tls: true
+    host: ""
+    annotations: {}
 
 
 # Shared configurations
