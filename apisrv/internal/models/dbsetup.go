@@ -74,6 +74,7 @@ func migrate(db *gorm.DB) error {
 		&CrsVersion{},
 		&CrsProfile{},
 		&CrsRuleSet{},
+		// Note: Event table is created by FluentBit pgsql plugin, not GORM
 	); err != nil {
 		return err
 	}

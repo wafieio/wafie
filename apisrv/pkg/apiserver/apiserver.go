@@ -73,6 +73,12 @@ func (s *ApiServer) registerHandlers(mux *http.ServeMux) {
 			compress1KB,
 		),
 	)
+	mux.Handle(
+		v1.NewEventServiceHandler(
+			NewEventService(s.logger),
+			compress1KB,
+		),
+	)
 }
 
 func (s *ApiServer) enableReflection(mux *http.ServeMux) {
@@ -83,6 +89,7 @@ func (s *ApiServer) enableReflection(mux *http.ServeMux) {
 		v1.ProtectionServiceName,
 		v1.StateVersionServiceName,
 		v1.CrsServiceName,
+		v1.EventServiceName,
 	)
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))

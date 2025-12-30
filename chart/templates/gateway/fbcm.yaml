@@ -24,14 +24,14 @@ data:
           parser: json_parser_with_timestamp
           reserve_data: On
       outputs:
-        - name: opensearch
+        # PostgreSQL output - stores WAF events as JSONB
+        - name: pgsql
           match: modsec.logs
-          host: opensearch-cluster-master
-          port: 9200
-          index: wafie-gateway-%Y.%m.%d
-          http_user: admin
-          http_passwd: 8NybEHCU81IzgWhx
-          type: _doc
-          suppress_type_name: true
-          tls: On
-          tls.verify: Off
+          host: {{ .Release.Name }}-postgresql
+          port: 5432
+          user: {{ .Values.postgresql.auth.username }}
+          password: {{ .Values.postgresql.auth.password }}
+          database: {{ .Values.postgresql.auth.database }}
+          table: events
+          timestamp_key: time
+          async: false

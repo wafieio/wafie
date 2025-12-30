@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package wafie.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Event represents a WAF security event from ModSecurity
+// Note: Events are stored by FluentBit without a unique ID
+message Event {
+  string tag = 1;
+  google.protobuf.Timestamp time = 2;
+  google.protobuf.Struct data = 3;
+}
+
+// TimeRange for filtering events
+message TimeRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+// ListEventsRequest - query parameters for listing events
+message ListEventsRequest {
+  optional TimeRange time_range = 1;
+  optional uint32 protection_id = 2;
+  optional uint32 severity = 3;
+  optional string rule_id = 4;
+  optional string client_ip = 5;
+  optional uint32 limit = 6;
+  optional uint32 offset = 7;
+}
+
+// ListEventsResponse - paginated list of events
+message ListEventsResponse {
+  repeated Event events = 1;
+  int64 total = 2;
+}
+
+// SeverityCount - count by severity level
+message SeverityCount {
+  string severity = 1;
+  int64 count = 2;
+}
+
+// RuleCount - count by rule ID
+message RuleCount {
+  string rule_id = 1;
+  int64 count = 2;
+}
+
+// IpCount - count by IP address
+message IpCount {
+  string ip = 1;
+  int64 count = 2;
+}
+
+// ProtectionStats - stats per protection
+message ProtectionStats {
+  string protection_id = 1;
+  int64 total_events = 2;
+  int64 blocked_attacks = 3;
+}
+
+// EventStats - aggregated statistics
+message EventStats {
+  int64 total_events = 1;
+  int64 blocked_attacks = 2;
+  int64 unique_ips = 3;
+  repeated SeverityCount by_severity = 4;
+  repeated RuleCount top_rules = 5;
+  repeated IpCount top_ips = 6;
+  repeated ProtectionStats per_protection = 7;
+}
+
+// GetEventStatsRequest - query parameters for stats
+message GetEventStatsRequest {
+  optional TimeRange time_range = 1;
+  optional uint32 protection_id = 2;
+  optional bool include_per_protection = 3;
+}
+
+// GetEventStatsResponse
+message GetEventStatsResponse {
+  EventStats stats = 1;
+}
+
+// EventService - API for querying WAF events
+service EventService {
+  // ListEvents retrieves events with filtering and pagination
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
+
+  // GetEventStats retrieves aggregated statistics
+  rpc GetEventStats(GetEventStatsRequest) returns (GetEventStatsResponse);
+}
