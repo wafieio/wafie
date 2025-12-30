@@ -103,18 +103,22 @@ func seedCrsProfiles(db *gorm.DB) error {
 	if len(profileRules) > 0 {
 		return nil
 	}
-	rules, err := modsec.CRSRuleSet()
-	if err != nil {
-		return err
-	}
-	for crsName, crsContent := range rules {
-		if err := crsRepo.CreateCrsProfile(
-			&CrsProfile{
-				Name:           DefaultCRSProfileName,
-				CrsFileName:    crsName,
-				CrsFileContent: crsContent,
-			}); err != nil {
+	crsProfiles := []string{FullCRSProfileName, EmptyCRSProfileName}
+	for _, crsProfile := range crsProfiles {
+
+		rules, err := modsec.CRSRuleSet(crsProfile)
+		if err != nil {
 			return err
+		}
+		for crsName, crsContent := range rules {
+			if err := crsRepo.CreateCrsProfile(
+				&CrsProfile{
+					Name:           crsProfile,
+					CrsFileName:    crsName,
+					CrsFileContent: crsContent,
+				}); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

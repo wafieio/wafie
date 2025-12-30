@@ -17,7 +17,9 @@ import (
 )
 
 const (
-	DefaultCRSProfileName = "default-crs-profile"
+	FullCRSProfileName    = "full"
+	EmptyCRSProfileName   = "empty"
+	DefaultCRSProfileName = EmptyCRSProfileName
 	DefaultCrsVersionTag  = "default"
 )
 

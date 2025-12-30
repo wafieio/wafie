@@ -64,9 +64,11 @@ Deploy wafie helm chart
 ```bash
 helm repo add wafie https://charts.wafie.io
 helm repo update 
-helm install wafie wafie/wafie \
+helm upgrade -i wafie wafie/wafie \
   --set api.ingress.host=wafie-api.$(ipconfig getifaddr en0).nip.io \
-  --set console.ingress.host=wafie-console..$(ipconfig getifaddr en0).nip.io
+  --set console.ingress.host=wafie-console.$(ipconfig getifaddr en0).nip.io \
+  --set api.ingress.tls=false \
+  --set console.ingress.tls=false 
 ```
 
 Check all wafie pods are running 
