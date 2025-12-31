@@ -249,16 +249,3 @@ func (s *ProtectionRepository) ListProtections(options *wv1.ListProtectionsOptio
 func (s *ProtectionRepository) DeleteProtection(protectionId uint32) error {
 	return s.db.Delete(&Protection{ID: uint(protectionId)}).Error
 }
-
-//func (p *Protection) renderCrsRules() error {
-//	for _, v := range p.CrsVersions {
-//		for _, r := range v.CrsRuleSets {
-//			res, err := r.Render(p.DesiredState.ModSec)
-//			if err != nil {
-//				return err
-//			}
-//			fmt.Println(res)
-//		}
-//	}
-//	return nil
-//}
