@@ -18,20 +18,6 @@ helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
 
 .staging.wafie.io
 
-helm install wafie-opensearch oci://registry-1.docker.io/bitnamicharts/opensearch \
-  --set image.repository=bitnamilegacy/wordpress \
-  --set ingress.enabled=true \
-  --set ingress.hostname=opensearch.10.100.102.110.nip.io
-
-
-helm install wafie-opensearch opensearch-project/opensearch \
-  --set clusterName=wafie-opensearch-single-node \
-  --set nodeGroup=single-node \
-  --set replicas=1 \
-  --set minimumMasterNodes: 1 \
-discovery:
-  type: single-node
-
 helm install cwaf-pg oci://registry-1.docker.io/bitnamicharts/postgresql \
   --set auth.postgresPassword=cwafpg \
   --set auth.username=cwafpg \

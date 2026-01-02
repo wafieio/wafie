@@ -74,14 +74,3 @@ Check all wafie pods are running
 kubectl get pods -l 'app in (wafie-relay,appsecgw,wafie-control-plane)'
 ```
 
-Optional - Deploy OpenSearch Dashboard 
-```bash
-helm install od wafie/opensearch-dashboards \
-  --set ingress.enabled=true \
-  --set ingress.hosts[0].host=opensearch-dashbard.$(ipconfig getifaddr en0).nip.io \
-  --set ingress.hosts[0].paths[0].path="/" \
-  --set ingress.hosts[0].paths[0].backend.service.name="opensearch-dashboards" \
-  --set ingress.hosts[0].paths[0].backend.service.port.name="http"
-```
-
-
