@@ -27,14 +27,23 @@ enum GetProtectionOptionsIncludeCrsRules{
   GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_NONE = 3;
 }
 
-message ModSec {
+message IPBlockRule {
+  string cidr = 1;
+}
+
+message IPRules {
+  repeated IPBlockRule ip_block_rules = 1;
+}
+
+message Waf {
   ProtectionMode protection_mode = 1;
   ParanoiaLevel paranoia_level = 2;
 }
 
 message ProtectionDesiredState {
-  ModSec mode_sec = 1;
-  uint32 xff_num_trusted_hops = 2;
+  optional Waf waf = 1;
+  optional uint32  xff_num_trusted_hops = 2;
+  optional IPRules ip_rules = 3;
 }
 
 message Protection {

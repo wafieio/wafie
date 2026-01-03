@@ -20,14 +20,21 @@ type ProtectionRepository struct {
 	Protection Protection
 }
 
-type ModSec struct {
+type Waf struct {
 	Mode          uint32 `json:"protectionMode"`
 	ParanoiaLevel uint32 `json:"paranoiaLevel"`
 }
 
+type IPBlockRule struct {
+	CIDR string `json:"cidr,omitempty"`
+}
+type IPRules struct {
+	IPBlockRules []IPBlockRule `json:"ipBlockRules,omitempty"`
+}
 type ProtectionDesiredState struct {
-	ModSec            *ModSec `json:"modSec"`
-	XffNumTrustedHops uint32  `json:"xffNumTrustedHops"`
+	Waf               *Waf     `json:"waf,omitempty"`
+	XffNumTrustedHops *uint32  `json:"xffNumTrustedHops,omitempty"`
+	IPRules           *IPRules `json:"ipRules,omitempty"`
 }
 
 type Protection struct {
@@ -70,11 +77,74 @@ func (s *ProtectionDesiredState) Value() (driver.Value, error) {
 }
 
 func (s *ProtectionDesiredState) FromProto(v1desiredState *wv1.ProtectionDesiredState) {
-	s.ModSec = &ModSec{
-		Mode:          uint32(v1desiredState.ModeSec.ProtectionMode),
-		ParanoiaLevel: uint32(v1desiredState.ModeSec.ParanoiaLevel),
+	if v1desiredState == nil {
+		return
 	}
-	s.XffNumTrustedHops = v1desiredState.XffNumTrustedHops
+	if v1desiredState.Waf != nil {
+		if s.Waf == nil {
+			s.Waf = &Waf{}
+		}
+		s.Waf.FromProto(v1desiredState.Waf)
+	}
+	if v1desiredState.XffNumTrustedHops != nil {
+		s.XffNumTrustedHops = v1desiredState.XffNumTrustedHops
+	}
+	if v1desiredState.IpRules != nil {
+		if s.IPRules == nil {
+			s.IPRules = &IPRules{}
+		}
+		s.IPRules.FromProto(v1desiredState.IpRules)
+	}
+}
+
+func (s *ProtectionDesiredState) Merge(newDesiredState *ProtectionDesiredState) {
+	// nothing to merge if new desired state is nil
+	if newDesiredState == nil {
+		return
+	}
+	// if new desired state waf is not nil, fully overwrite the Waf object
+	if newDesiredState.Waf != nil {
+		s.Waf = newDesiredState.Waf
+	}
+	// if XffNumTrustedHops set by request fully overwrite it
+	if newDesiredState.XffNumTrustedHops != nil {
+		s.XffNumTrustedHops = newDesiredState.XffNumTrustedHops
+	}
+	// if IPRules was set by the request
+	if newDesiredState.IPRules != nil {
+		// if current protection has no IPRules, set it
+		if s.IPRules == nil {
+			s.IPRules = &IPRules{IPBlockRules: newDesiredState.IPRules.IPBlockRules}
+			// fully overwrite ip block rules in case they were fully empty
+		} else if len(newDesiredState.IPRules.IPBlockRules) == 0 {
+			s.IPRules.IPBlockRules = newDesiredState.IPRules.IPBlockRules
+		} else {
+			// the ip block rules already present, make sure we've no duplicates
+			for _, newIpBlockRule := range newDesiredState.IPRules.IPBlockRules {
+				newIpRuleFound := false
+				for _, ipBlockRule := range s.IPRules.IPBlockRules {
+					if newIpBlockRule == ipBlockRule {
+						newIpRuleFound = true
+					}
+				}
+				if !newIpRuleFound {
+					s.IPRules.IPBlockRules = append(s.IPRules.IPBlockRules, newIpBlockRule)
+				}
+			}
+		}
+	}
+}
+
+func (f *Waf) FromProto(v1desiredState *wv1.Waf) {
+	f.ParanoiaLevel = uint32(v1desiredState.ParanoiaLevel)
+	f.Mode = uint32(v1desiredState.ProtectionMode)
+}
+
+func (p *IPRules) FromProto(ipRules *wv1.IPRules) {
+	p.IPBlockRules = make([]IPBlockRule, len(ipRules.IpBlockRules))
+	for i, ipBlockRule := range ipRules.IpBlockRules {
+		p.IPBlockRules[i] = IPBlockRule{CIDR: ipBlockRule.Cidr}
+	}
 }
 
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
@@ -98,9 +168,9 @@ func (p *Protection) ToProto() *wv1.Protection {
 		ApplicationId:  uint32(p.ApplicationID),
 		ProtectionMode: wv1.ProtectionMode(p.Mode),
 		DesiredState: &wv1.ProtectionDesiredState{
-			ModeSec: &wv1.ModSec{
-				ProtectionMode: wv1.ProtectionMode(p.DesiredState.ModSec.Mode),
-				ParanoiaLevel:  wv1.ParanoiaLevel(p.DesiredState.ModSec.ParanoiaLevel),
+			Waf: &wv1.Waf{
+				ProtectionMode: wv1.ProtectionMode(p.DesiredState.Waf.Mode),
+				ParanoiaLevel:  wv1.ParanoiaLevel(p.DesiredState.Waf.ParanoiaLevel),
 			},
 			XffNumTrustedHops: p.DesiredState.XffNumTrustedHops,
 		},
@@ -167,30 +237,30 @@ func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtection
 }
 
 func (s *ProtectionRepository) UpdateProtection(req *wv1.PutProtectionRequest) (*Protection, error) {
+	// prepare new desired state
+	var newDesiredState *ProtectionDesiredState
+	if req.DesiredState != nil {
+		newDesiredState = &ProtectionDesiredState{}
+		newDesiredState.FromProto(req.DesiredState)
+	}
+	// init new Protection model
 	protection := &Protection{ID: uint(req.GetId())}
+	// set default protection mode if not set by request
 	if req.ProtectionMode != nil {
 		protection.Mode = uint32(*req.ProtectionMode)
 	}
-	if req.DesiredState != nil {
-		desiredState := &ProtectionDesiredState{}
-		desiredState.FromProto(req.DesiredState)
-		protection.DesiredState = *desiredState
+	// set application id and current desired state
+	if err := s.db.Raw("SELECT application_id, desired_state FROM protections WHERE id = ?", protection.ID).
+		Row().
+		Scan(&protection.ApplicationID, &protection.DesiredState); err != nil {
+		s.logger.Error(err.Error())
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	// fetch the application id for the given protection
-	res := s.db.Model(&Protection{}).
-		Select("application_id").
-		Where("id = ?", protection.ID).
-		Scan(&protection.ApplicationID)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) || res.RowsAffected == 0 {
-			return nil, connect.NewError(connect.CodeNotFound, res.Error)
-		}
-		return nil, connect.NewError(connect.CodeInternal, res.Error)
+	if protection.ApplicationID == 0 {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("protection not found"))
 	}
-	if res.RowsAffected == 0 {
-		return nil, connect.NewError(connect.CodeNotFound, res.Error)
-	}
-	res = s.db.
+	protection.DesiredState.Merge(newDesiredState)
+	res := s.db.
 		Model(protection).
 		Updates(protection)
 	if res.Error != nil {
