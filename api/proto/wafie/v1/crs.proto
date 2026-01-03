@@ -31,6 +31,20 @@ message CrsRuleSet {
   string md5 = 6;
 }
 
+message Rule {
+  repeated string base64_rule = 1;
+  uint32 rule_set_id = 2;
+  string application_name = 3;
+}
+
+
+message CreateRuleRequest {
+  Rule rule = 1;
+}
+
+message CreateRuleResponse {}
+
+
 message CreateCrsVersionRequest{
   CrsVersion version = 1;
 }
@@ -48,6 +62,10 @@ message CreateCrsRuleSetResponse{}
 
 
 service CrsService {
+  // CRS Version methods
   rpc CreateCrsVersion(CreateCrsVersionRequest) returns (CreateCrsVersionResponse);
+  // CRS Rule Set methods
   rpc CreateCrsRuleSet(CreateCrsRuleSetRequest) returns (CreateCrsRuleSetResponse);
+  // Rule methods
+  rpc CreateRule(CreateRuleRequest) returns (CreateRuleResponse);
 }

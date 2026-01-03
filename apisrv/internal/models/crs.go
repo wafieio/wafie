@@ -6,7 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/wafieio/wafie/apisrv/pkg/seclang"
 	"io"
+	"regexp"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -21,6 +24,8 @@ const (
 	EmptyCRSProfileName   = "empty"
 	DefaultCRSProfileName = EmptyCRSProfileName
 	DefaultCrsVersionTag  = "default"
+	CustomRuleIdStart     = 10000
+	CustomRuleIdEnd       = 99999
 )
 
 type CrsVersion struct {
@@ -89,6 +94,39 @@ func (r *CRSRepository) GetProfileRulesByName(profileName string) (rules []*CrsP
 
 func (r *CRSRepository) CreateCrsVersion(crsVersion *CrsVersion) error {
 	return r.db.Create(crsVersion).Error
+}
+
+func (r *CRSRepository) CreateRule(ruleSetId uint, rules []string, appName string) error {
+	crsRuleSet := &CrsRuleSet{}
+	r.db.Raw(`select r.* from applications as a
+    				join protections as p on p.application_id = a.id
+              		join crs_versions as c on c.protection_id = p.id
+              		join crs_rule_sets as r on c.id = r.crs_version_id
+    				where a.name = ? and r.id = ?`, appName, ruleSetId).
+		Scan(&crsRuleSet)
+	if crsRuleSet.ID == 0 {
+		r.logger.Info("not found", zap.String("appName", appName), zap.Uint("ruleSetId", ruleSetId))
+		return fmt.Errorf("not found")
+	}
+	ruleId, err := nextRuleId(crsRuleSet.CrsFileContent)
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		ruleObj, err := seclang.ParseRule(rule)
+		if err != nil {
+			return err
+		}
+		ruleObj.AddAction(
+			seclang.Action{
+				Name:      seclang.ActionID,
+				Parameter: strconv.FormatUint(ruleId, 10)},
+		)
+		modSecRule := ruleObj.ToModSecurityRule()
+		r.logger.Info("adding modsecurity rule", zap.String("rule", modSecRule))
+		crsRuleSet.CrsFileContent += fmt.Sprintf("\n%s", modSecRule)
+	}
+	return r.db.Save(crsRuleSet).Error
 }
 
 func (r *CRSRepository) uniqueCloneProfileOperation(crsVersionId uint) bool {
@@ -210,4 +248,24 @@ func (s *CrsRuleSet) Render(data *ModSec) (renderedCrsRules string, err error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func nextRuleId(crsFileContent string) (uint64, error) {
+	re := regexp.MustCompile(`id:\s*(\d+)`)
+	matches := re.FindAllStringSubmatch(crsFileContent, -1)
+	maxId := 0
+	for _, match := range matches {
+		if len(match) == 2 {
+			id, err := strconv.Atoi(match[1])
+			if err != nil {
+				return 0, err
+			}
+			if id > maxId {
+				maxId = id
+			}
+		}
+	}
+	maxId++ // increase by one
+	return uint64(maxId), nil
+
 }

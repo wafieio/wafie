@@ -10,6 +10,7 @@ api:
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 api.image:
+	podman manifest rm api --ignore
 	podman build \
       --manifest api \
       --platform linux/arm64,linux/amd64 \
