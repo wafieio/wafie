@@ -215,7 +215,7 @@ func (v *CrsVersion) FromProto(crsVersion *wv1.CrsVersion) {
 func (s *CrsRuleSet) ToProto(data *ProtectionDesiredState) *wv1.CrsRuleSet {
 	l := NewCrsRepository(nil, nil).logger
 	// render rule file
-	renderedCrsFileContent, err := s.Render(data.Waf)
+	renderedCrsFileContent, err := s.Render(data)
 	if err != nil {
 		l.Error(err.Error())
 		return nil
@@ -235,7 +235,7 @@ func (s *CrsRuleSet) ToProto(data *ProtectionDesiredState) *wv1.CrsRuleSet {
 	}
 }
 
-func (s *CrsRuleSet) Render(data *Waf) (renderedCrsRules string, err error) {
+func (s *CrsRuleSet) Render(data *ProtectionDesiredState) (renderedCrsRules string, err error) {
 
 	tmpl, err := template.New(s.CrsFileName).
 		Delims("{{{", "}}}").

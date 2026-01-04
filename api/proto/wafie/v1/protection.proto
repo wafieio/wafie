@@ -82,7 +82,11 @@ message GetProtectionResponse {
 message PutProtectionRequest {
   uint32 id = 1;
   optional ProtectionMode protection_mode = 2;
-  optional ProtectionDesiredState desired_state = 3;
+  optional Waf waf = 3;
+  optional uint32  xff_num_trusted_hops = 4;
+  optional IPRules ip_rules_to_add = 5;
+  optional IPRules ip_rules_to_remove = 6;
+
 }
 
 message PutProtectionResponse {
