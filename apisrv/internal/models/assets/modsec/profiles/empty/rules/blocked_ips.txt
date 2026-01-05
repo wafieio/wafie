@@ -1,3 +1,3 @@
-{{range $index, $ipBlock := .IPRules.IPBlockRules}}
-  {{- $ipBlock.CIDR }}
-{{end}}
+{{{range $index, $ipBlock := .IPRules.IPBlockRules}}}
+  {{{- $ipBlock.CIDR }}}
+{{{end}}}

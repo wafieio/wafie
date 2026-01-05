@@ -113,6 +113,7 @@ func (s *ProtectionDesiredState) Merge(putProtectionReq *wv1.PutProtectionReques
 	}
 	// if current IP Rules is empty, just set it accordingly to request
 	if s.IPRules == nil && putProtectionReq.IpRulesToAdd != nil {
+		s.IPRules = &IPRules{}
 		s.IPRules.FromProto(putProtectionReq.IpRulesToAdd)
 	} else {
 		var ipBlockRules []*wv1.IPBlockRule
