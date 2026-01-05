@@ -39,12 +39,18 @@ const (
 	// CrsServiceCreateCrsRuleSetProcedure is the fully-qualified name of the CrsService's
 	// CreateCrsRuleSet RPC.
 	CrsServiceCreateCrsRuleSetProcedure = "/wafie.v1.CrsService/CreateCrsRuleSet"
+	// CrsServiceCreateRuleProcedure is the fully-qualified name of the CrsService's CreateRule RPC.
+	CrsServiceCreateRuleProcedure = "/wafie.v1.CrsService/CreateRule"
 )
 
 // CrsServiceClient is a client for the wafie.v1.CrsService service.
 type CrsServiceClient interface {
+	// CRS Version methods
 	CreateCrsVersion(context.Context, *connect.Request[v1.CreateCrsVersionRequest]) (*connect.Response[v1.CreateCrsVersionResponse], error)
+	// CRS Rule Set methods
 	CreateCrsRuleSet(context.Context, *connect.Request[v1.CreateCrsRuleSetRequest]) (*connect.Response[v1.CreateCrsRuleSetResponse], error)
+	// Rule methods
+	CreateRule(context.Context, *connect.Request[v1.CreateRuleRequest]) (*connect.Response[v1.CreateRuleResponse], error)
 }
 
 // NewCrsServiceClient constructs a client for the wafie.v1.CrsService service. By default, it uses
@@ -70,6 +76,12 @@ func NewCrsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(crsServiceMethods.ByName("CreateCrsRuleSet")),
 			connect.WithClientOptions(opts...),
 		),
+		createRule: connect.NewClient[v1.CreateRuleRequest, v1.CreateRuleResponse](
+			httpClient,
+			baseURL+CrsServiceCreateRuleProcedure,
+			connect.WithSchema(crsServiceMethods.ByName("CreateRule")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -77,6 +89,7 @@ func NewCrsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 type crsServiceClient struct {
 	createCrsVersion *connect.Client[v1.CreateCrsVersionRequest, v1.CreateCrsVersionResponse]
 	createCrsRuleSet *connect.Client[v1.CreateCrsRuleSetRequest, v1.CreateCrsRuleSetResponse]
+	createRule       *connect.Client[v1.CreateRuleRequest, v1.CreateRuleResponse]
 }
 
 // CreateCrsVersion calls wafie.v1.CrsService.CreateCrsVersion.
@@ -89,10 +102,19 @@ func (c *crsServiceClient) CreateCrsRuleSet(ctx context.Context, req *connect.Re
 	return c.createCrsRuleSet.CallUnary(ctx, req)
 }
 
+// CreateRule calls wafie.v1.CrsService.CreateRule.
+func (c *crsServiceClient) CreateRule(ctx context.Context, req *connect.Request[v1.CreateRuleRequest]) (*connect.Response[v1.CreateRuleResponse], error) {
+	return c.createRule.CallUnary(ctx, req)
+}
+
 // CrsServiceHandler is an implementation of the wafie.v1.CrsService service.
 type CrsServiceHandler interface {
+	// CRS Version methods
 	CreateCrsVersion(context.Context, *connect.Request[v1.CreateCrsVersionRequest]) (*connect.Response[v1.CreateCrsVersionResponse], error)
+	// CRS Rule Set methods
 	CreateCrsRuleSet(context.Context, *connect.Request[v1.CreateCrsRuleSetRequest]) (*connect.Response[v1.CreateCrsRuleSetResponse], error)
+	// Rule methods
+	CreateRule(context.Context, *connect.Request[v1.CreateRuleRequest]) (*connect.Response[v1.CreateRuleResponse], error)
 }
 
 // NewCrsServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -114,12 +136,20 @@ func NewCrsServiceHandler(svc CrsServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(crsServiceMethods.ByName("CreateCrsRuleSet")),
 		connect.WithHandlerOptions(opts...),
 	)
+	crsServiceCreateRuleHandler := connect.NewUnaryHandler(
+		CrsServiceCreateRuleProcedure,
+		svc.CreateRule,
+		connect.WithSchema(crsServiceMethods.ByName("CreateRule")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/wafie.v1.CrsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CrsServiceCreateCrsVersionProcedure:
 			crsServiceCreateCrsVersionHandler.ServeHTTP(w, r)
 		case CrsServiceCreateCrsRuleSetProcedure:
 			crsServiceCreateCrsRuleSetHandler.ServeHTTP(w, r)
+		case CrsServiceCreateRuleProcedure:
+			crsServiceCreateRuleHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -135,4 +165,8 @@ func (UnimplementedCrsServiceHandler) CreateCrsVersion(context.Context, *connect
 
 func (UnimplementedCrsServiceHandler) CreateCrsRuleSet(context.Context, *connect.Request[v1.CreateCrsRuleSetRequest]) (*connect.Response[v1.CreateCrsRuleSetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("wafie.v1.CrsService.CreateCrsRuleSet is not implemented"))
+}
+
+func (UnimplementedCrsServiceHandler) CreateRule(context.Context, *connect.Request[v1.CreateRuleRequest]) (*connect.Response[v1.CreateRuleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("wafie.v1.CrsService.CreateRule is not implemented"))
 }

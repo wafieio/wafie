@@ -177,28 +177,27 @@ func (GetProtectionOptionsIncludeCrsRules) EnumDescriptor() ([]byte, []int) {
 	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{2}
 }
 
-type ModSec struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ProtectionMode ProtectionMode         `protobuf:"varint,1,opt,name=protection_mode,json=protectionMode,proto3,enum=wafie.v1.ProtectionMode" json:"protection_mode,omitempty"`
-	ParanoiaLevel  ParanoiaLevel          `protobuf:"varint,2,opt,name=paranoia_level,json=paranoiaLevel,proto3,enum=wafie.v1.ParanoiaLevel" json:"paranoia_level,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+type IPBlockRule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cidr          string                 `protobuf:"bytes,1,opt,name=cidr,proto3" json:"cidr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ModSec) Reset() {
-	*x = ModSec{}
+func (x *IPBlockRule) Reset() {
+	*x = IPBlockRule{}
 	mi := &file_wafie_v1_protection_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ModSec) String() string {
+func (x *IPBlockRule) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ModSec) ProtoMessage() {}
+func (*IPBlockRule) ProtoMessage() {}
 
-func (x *ModSec) ProtoReflect() protoreflect.Message {
+func (x *IPBlockRule) ProtoReflect() protoreflect.Message {
 	mi := &file_wafie_v1_protection_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -210,19 +209,108 @@ func (x *ModSec) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ModSec.ProtoReflect.Descriptor instead.
-func (*ModSec) Descriptor() ([]byte, []int) {
+// Deprecated: Use IPBlockRule.ProtoReflect.Descriptor instead.
+func (*IPBlockRule) Descriptor() ([]byte, []int) {
 	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ModSec) GetProtectionMode() ProtectionMode {
+func (x *IPBlockRule) GetCidr() string {
+	if x != nil {
+		return x.Cidr
+	}
+	return ""
+}
+
+type IPRules struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IpBlockRules  []*IPBlockRule         `protobuf:"bytes,1,rep,name=ip_block_rules,json=ipBlockRules,proto3" json:"ip_block_rules,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IPRules) Reset() {
+	*x = IPRules{}
+	mi := &file_wafie_v1_protection_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IPRules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IPRules) ProtoMessage() {}
+
+func (x *IPRules) ProtoReflect() protoreflect.Message {
+	mi := &file_wafie_v1_protection_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IPRules.ProtoReflect.Descriptor instead.
+func (*IPRules) Descriptor() ([]byte, []int) {
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *IPRules) GetIpBlockRules() []*IPBlockRule {
+	if x != nil {
+		return x.IpBlockRules
+	}
+	return nil
+}
+
+type Waf struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ProtectionMode ProtectionMode         `protobuf:"varint,1,opt,name=protection_mode,json=protectionMode,proto3,enum=wafie.v1.ProtectionMode" json:"protection_mode,omitempty"`
+	ParanoiaLevel  ParanoiaLevel          `protobuf:"varint,2,opt,name=paranoia_level,json=paranoiaLevel,proto3,enum=wafie.v1.ParanoiaLevel" json:"paranoia_level,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Waf) Reset() {
+	*x = Waf{}
+	mi := &file_wafie_v1_protection_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Waf) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Waf) ProtoMessage() {}
+
+func (x *Waf) ProtoReflect() protoreflect.Message {
+	mi := &file_wafie_v1_protection_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Waf.ProtoReflect.Descriptor instead.
+func (*Waf) Descriptor() ([]byte, []int) {
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Waf) GetProtectionMode() ProtectionMode {
 	if x != nil {
 		return x.ProtectionMode
 	}
 	return ProtectionMode_PROTECTION_MODE_UNSPECIFIED
 }
 
-func (x *ModSec) GetParanoiaLevel() ParanoiaLevel {
+func (x *Waf) GetParanoiaLevel() ParanoiaLevel {
 	if x != nil {
 		return x.ParanoiaLevel
 	}
@@ -231,15 +319,16 @@ func (x *ModSec) GetParanoiaLevel() ParanoiaLevel {
 
 type ProtectionDesiredState struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	ModeSec           *ModSec                `protobuf:"bytes,1,opt,name=mode_sec,json=modeSec,proto3" json:"mode_sec,omitempty"`
-	XffNumTrustedHops uint32                 `protobuf:"varint,2,opt,name=xff_num_trusted_hops,json=xffNumTrustedHops,proto3" json:"xff_num_trusted_hops,omitempty"`
+	Waf               *Waf                   `protobuf:"bytes,1,opt,name=waf,proto3,oneof" json:"waf,omitempty"`
+	XffNumTrustedHops *uint32                `protobuf:"varint,2,opt,name=xff_num_trusted_hops,json=xffNumTrustedHops,proto3,oneof" json:"xff_num_trusted_hops,omitempty"`
+	IpRules           *IPRules               `protobuf:"bytes,3,opt,name=ip_rules,json=ipRules,proto3,oneof" json:"ip_rules,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ProtectionDesiredState) Reset() {
 	*x = ProtectionDesiredState{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[1]
+	mi := &file_wafie_v1_protection_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -251,7 +340,7 @@ func (x *ProtectionDesiredState) String() string {
 func (*ProtectionDesiredState) ProtoMessage() {}
 
 func (x *ProtectionDesiredState) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[1]
+	mi := &file_wafie_v1_protection_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -264,21 +353,28 @@ func (x *ProtectionDesiredState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProtectionDesiredState.ProtoReflect.Descriptor instead.
 func (*ProtectionDesiredState) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{1}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ProtectionDesiredState) GetModeSec() *ModSec {
+func (x *ProtectionDesiredState) GetWaf() *Waf {
 	if x != nil {
-		return x.ModeSec
+		return x.Waf
 	}
 	return nil
 }
 
 func (x *ProtectionDesiredState) GetXffNumTrustedHops() uint32 {
-	if x != nil {
-		return x.XffNumTrustedHops
+	if x != nil && x.XffNumTrustedHops != nil {
+		return *x.XffNumTrustedHops
 	}
 	return 0
+}
+
+func (x *ProtectionDesiredState) GetIpRules() *IPRules {
+	if x != nil {
+		return x.IpRules
+	}
+	return nil
 }
 
 type Protection struct {
@@ -295,7 +391,7 @@ type Protection struct {
 
 func (x *Protection) Reset() {
 	*x = Protection{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[2]
+	mi := &file_wafie_v1_protection_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -307,7 +403,7 @@ func (x *Protection) String() string {
 func (*Protection) ProtoMessage() {}
 
 func (x *Protection) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[2]
+	mi := &file_wafie_v1_protection_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +416,7 @@ func (x *Protection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Protection.ProtoReflect.Descriptor instead.
 func (*Protection) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{2}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Protection) GetId() uint32 {
@@ -376,7 +472,7 @@ type CreateProtectionRequest struct {
 
 func (x *CreateProtectionRequest) Reset() {
 	*x = CreateProtectionRequest{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[3]
+	mi := &file_wafie_v1_protection_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -388,7 +484,7 @@ func (x *CreateProtectionRequest) String() string {
 func (*CreateProtectionRequest) ProtoMessage() {}
 
 func (x *CreateProtectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[3]
+	mi := &file_wafie_v1_protection_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +497,7 @@ func (x *CreateProtectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProtectionRequest.ProtoReflect.Descriptor instead.
 func (*CreateProtectionRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{3}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateProtectionRequest) GetApplicationId() uint32 {
@@ -434,7 +530,7 @@ type CreateProtectionResponse struct {
 
 func (x *CreateProtectionResponse) Reset() {
 	*x = CreateProtectionResponse{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[4]
+	mi := &file_wafie_v1_protection_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -446,7 +542,7 @@ func (x *CreateProtectionResponse) String() string {
 func (*CreateProtectionResponse) ProtoMessage() {}
 
 func (x *CreateProtectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[4]
+	mi := &file_wafie_v1_protection_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -459,7 +555,7 @@ func (x *CreateProtectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProtectionResponse.ProtoReflect.Descriptor instead.
 func (*CreateProtectionResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{4}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateProtectionResponse) GetProtection() *Protection {
@@ -478,7 +574,7 @@ type GetProtectionOptions struct {
 
 func (x *GetProtectionOptions) Reset() {
 	*x = GetProtectionOptions{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[5]
+	mi := &file_wafie_v1_protection_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +586,7 @@ func (x *GetProtectionOptions) String() string {
 func (*GetProtectionOptions) ProtoMessage() {}
 
 func (x *GetProtectionOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[5]
+	mi := &file_wafie_v1_protection_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +599,7 @@ func (x *GetProtectionOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProtectionOptions.ProtoReflect.Descriptor instead.
 func (*GetProtectionOptions) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{5}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetProtectionOptions) GetIncludeCrsRules() GetProtectionOptionsIncludeCrsRules {
@@ -523,7 +619,7 @@ type GetProtectionRequest struct {
 
 func (x *GetProtectionRequest) Reset() {
 	*x = GetProtectionRequest{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[6]
+	mi := &file_wafie_v1_protection_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -535,7 +631,7 @@ func (x *GetProtectionRequest) String() string {
 func (*GetProtectionRequest) ProtoMessage() {}
 
 func (x *GetProtectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[6]
+	mi := &file_wafie_v1_protection_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -548,7 +644,7 @@ func (x *GetProtectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProtectionRequest.ProtoReflect.Descriptor instead.
 func (*GetProtectionRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{6}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetProtectionRequest) GetId() uint32 {
@@ -574,7 +670,7 @@ type GetProtectionResponse struct {
 
 func (x *GetProtectionResponse) Reset() {
 	*x = GetProtectionResponse{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[7]
+	mi := &file_wafie_v1_protection_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -586,7 +682,7 @@ func (x *GetProtectionResponse) String() string {
 func (*GetProtectionResponse) ProtoMessage() {}
 
 func (x *GetProtectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[7]
+	mi := &file_wafie_v1_protection_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -599,7 +695,7 @@ func (x *GetProtectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProtectionResponse.ProtoReflect.Descriptor instead.
 func (*GetProtectionResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{7}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetProtectionResponse) GetProtection() *Protection {
@@ -610,17 +706,20 @@ func (x *GetProtectionResponse) GetProtection() *Protection {
 }
 
 type PutProtectionRequest struct {
-	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Id             uint32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	ProtectionMode *ProtectionMode         `protobuf:"varint,2,opt,name=protection_mode,json=protectionMode,proto3,enum=wafie.v1.ProtectionMode,oneof" json:"protection_mode,omitempty"`
-	DesiredState   *ProtectionDesiredState `protobuf:"bytes,3,opt,name=desired_state,json=desiredState,proto3,oneof" json:"desired_state,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ProtectionMode    *ProtectionMode        `protobuf:"varint,2,opt,name=protection_mode,json=protectionMode,proto3,enum=wafie.v1.ProtectionMode,oneof" json:"protection_mode,omitempty"`
+	Waf               *Waf                   `protobuf:"bytes,3,opt,name=waf,proto3,oneof" json:"waf,omitempty"`
+	XffNumTrustedHops *uint32                `protobuf:"varint,4,opt,name=xff_num_trusted_hops,json=xffNumTrustedHops,proto3,oneof" json:"xff_num_trusted_hops,omitempty"`
+	IpRulesToAdd      *IPRules               `protobuf:"bytes,5,opt,name=ip_rules_to_add,json=ipRulesToAdd,proto3,oneof" json:"ip_rules_to_add,omitempty"`
+	IpRulesToRemove   *IPRules               `protobuf:"bytes,6,opt,name=ip_rules_to_remove,json=ipRulesToRemove,proto3,oneof" json:"ip_rules_to_remove,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PutProtectionRequest) Reset() {
 	*x = PutProtectionRequest{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[8]
+	mi := &file_wafie_v1_protection_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -632,7 +731,7 @@ func (x *PutProtectionRequest) String() string {
 func (*PutProtectionRequest) ProtoMessage() {}
 
 func (x *PutProtectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[8]
+	mi := &file_wafie_v1_protection_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -645,7 +744,7 @@ func (x *PutProtectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutProtectionRequest.ProtoReflect.Descriptor instead.
 func (*PutProtectionRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{8}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PutProtectionRequest) GetId() uint32 {
@@ -662,9 +761,30 @@ func (x *PutProtectionRequest) GetProtectionMode() ProtectionMode {
 	return ProtectionMode_PROTECTION_MODE_UNSPECIFIED
 }
 
-func (x *PutProtectionRequest) GetDesiredState() *ProtectionDesiredState {
+func (x *PutProtectionRequest) GetWaf() *Waf {
 	if x != nil {
-		return x.DesiredState
+		return x.Waf
+	}
+	return nil
+}
+
+func (x *PutProtectionRequest) GetXffNumTrustedHops() uint32 {
+	if x != nil && x.XffNumTrustedHops != nil {
+		return *x.XffNumTrustedHops
+	}
+	return 0
+}
+
+func (x *PutProtectionRequest) GetIpRulesToAdd() *IPRules {
+	if x != nil {
+		return x.IpRulesToAdd
+	}
+	return nil
+}
+
+func (x *PutProtectionRequest) GetIpRulesToRemove() *IPRules {
+	if x != nil {
+		return x.IpRulesToRemove
 	}
 	return nil
 }
@@ -678,7 +798,7 @@ type PutProtectionResponse struct {
 
 func (x *PutProtectionResponse) Reset() {
 	*x = PutProtectionResponse{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[9]
+	mi := &file_wafie_v1_protection_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -690,7 +810,7 @@ func (x *PutProtectionResponse) String() string {
 func (*PutProtectionResponse) ProtoMessage() {}
 
 func (x *PutProtectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[9]
+	mi := &file_wafie_v1_protection_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +823,7 @@ func (x *PutProtectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutProtectionResponse.ProtoReflect.Descriptor instead.
 func (*PutProtectionResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{9}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PutProtectionResponse) GetProtection() *Protection {
@@ -725,7 +845,7 @@ type ListProtectionsOptions struct {
 
 func (x *ListProtectionsOptions) Reset() {
 	*x = ListProtectionsOptions{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[10]
+	mi := &file_wafie_v1_protection_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -737,7 +857,7 @@ func (x *ListProtectionsOptions) String() string {
 func (*ListProtectionsOptions) ProtoMessage() {}
 
 func (x *ListProtectionsOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[10]
+	mi := &file_wafie_v1_protection_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +870,7 @@ func (x *ListProtectionsOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProtectionsOptions.ProtoReflect.Descriptor instead.
 func (*ListProtectionsOptions) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{10}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListProtectionsOptions) GetProtectionMode() ProtectionMode {
@@ -790,7 +910,7 @@ type ListProtectionsRequest struct {
 
 func (x *ListProtectionsRequest) Reset() {
 	*x = ListProtectionsRequest{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[11]
+	mi := &file_wafie_v1_protection_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +922,7 @@ func (x *ListProtectionsRequest) String() string {
 func (*ListProtectionsRequest) ProtoMessage() {}
 
 func (x *ListProtectionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[11]
+	mi := &file_wafie_v1_protection_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +935,7 @@ func (x *ListProtectionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProtectionsRequest.ProtoReflect.Descriptor instead.
 func (*ListProtectionsRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{11}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListProtectionsRequest) GetOptions() *ListProtectionsOptions {
@@ -834,7 +954,7 @@ type ListProtectionsResponse struct {
 
 func (x *ListProtectionsResponse) Reset() {
 	*x = ListProtectionsResponse{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[12]
+	mi := &file_wafie_v1_protection_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -846,7 +966,7 @@ func (x *ListProtectionsResponse) String() string {
 func (*ListProtectionsResponse) ProtoMessage() {}
 
 func (x *ListProtectionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[12]
+	mi := &file_wafie_v1_protection_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -859,7 +979,7 @@ func (x *ListProtectionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProtectionsResponse.ProtoReflect.Descriptor instead.
 func (*ListProtectionsResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{12}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListProtectionsResponse) GetProtections() []*Protection {
@@ -878,7 +998,7 @@ type DeleteProtectionRequest struct {
 
 func (x *DeleteProtectionRequest) Reset() {
 	*x = DeleteProtectionRequest{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[13]
+	mi := &file_wafie_v1_protection_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -890,7 +1010,7 @@ func (x *DeleteProtectionRequest) String() string {
 func (*DeleteProtectionRequest) ProtoMessage() {}
 
 func (x *DeleteProtectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[13]
+	mi := &file_wafie_v1_protection_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -903,7 +1023,7 @@ func (x *DeleteProtectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProtectionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteProtectionRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{13}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *DeleteProtectionRequest) GetId() uint32 {
@@ -921,7 +1041,7 @@ type DeleteProtectionResponse struct {
 
 func (x *DeleteProtectionResponse) Reset() {
 	*x = DeleteProtectionResponse{}
-	mi := &file_wafie_v1_protection_proto_msgTypes[14]
+	mi := &file_wafie_v1_protection_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -933,7 +1053,7 @@ func (x *DeleteProtectionResponse) String() string {
 func (*DeleteProtectionResponse) ProtoMessage() {}
 
 func (x *DeleteProtectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_protection_proto_msgTypes[14]
+	mi := &file_wafie_v1_protection_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -946,20 +1066,28 @@ func (x *DeleteProtectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProtectionResponse.ProtoReflect.Descriptor instead.
 func (*DeleteProtectionResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{14}
+	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{16}
 }
 
 var File_wafie_v1_protection_proto protoreflect.FileDescriptor
 
 const file_wafie_v1_protection_proto_rawDesc = "" +
 	"\n" +
-	"\x19wafie/v1/protection.proto\x12\bwafie.v1\x1a\x1awafie/v1/application.proto\x1a\x12wafie/v1/crs.proto\"\x8b\x01\n" +
-	"\x06ModSec\x12A\n" +
+	"\x19wafie/v1/protection.proto\x12\bwafie.v1\x1a\x1awafie/v1/application.proto\x1a\x12wafie/v1/crs.proto\"!\n" +
+	"\vIPBlockRule\x12\x12\n" +
+	"\x04cidr\x18\x01 \x01(\tR\x04cidr\"F\n" +
+	"\aIPRules\x12;\n" +
+	"\x0eip_block_rules\x18\x01 \x03(\v2\x15.wafie.v1.IPBlockRuleR\fipBlockRules\"\x88\x01\n" +
+	"\x03Waf\x12A\n" +
 	"\x0fprotection_mode\x18\x01 \x01(\x0e2\x18.wafie.v1.ProtectionModeR\x0eprotectionMode\x12>\n" +
-	"\x0eparanoia_level\x18\x02 \x01(\x0e2\x17.wafie.v1.ParanoiaLevelR\rparanoiaLevel\"v\n" +
-	"\x16ProtectionDesiredState\x12+\n" +
-	"\bmode_sec\x18\x01 \x01(\v2\x10.wafie.v1.ModSecR\amodeSec\x12/\n" +
-	"\x14xff_num_trusted_hops\x18\x02 \x01(\rR\x11xffNumTrustedHops\"\xd4\x02\n" +
+	"\x0eparanoia_level\x18\x02 \x01(\x0e2\x17.wafie.v1.ParanoiaLevelR\rparanoiaLevel\"\xd5\x01\n" +
+	"\x16ProtectionDesiredState\x12$\n" +
+	"\x03waf\x18\x01 \x01(\v2\r.wafie.v1.WafH\x00R\x03waf\x88\x01\x01\x124\n" +
+	"\x14xff_num_trusted_hops\x18\x02 \x01(\rH\x01R\x11xffNumTrustedHops\x88\x01\x01\x121\n" +
+	"\bip_rules\x18\x03 \x01(\v2\x11.wafie.v1.IPRulesH\x02R\aipRules\x88\x01\x01B\x06\n" +
+	"\x04_wafB\x17\n" +
+	"\x15_xff_num_trusted_hopsB\v\n" +
+	"\t_ip_rules\"\xd4\x02\n" +
 	"\n" +
 	"Protection\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12%\n" +
@@ -988,13 +1116,19 @@ const file_wafie_v1_protection_proto_rawDesc = "" +
 	"\x15GetProtectionResponse\x124\n" +
 	"\n" +
 	"protection\x18\x01 \x01(\v2\x14.wafie.v1.ProtectionR\n" +
-	"protection\"\xe0\x01\n" +
+	"protection\"\xae\x03\n" +
 	"\x14PutProtectionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12F\n" +
-	"\x0fprotection_mode\x18\x02 \x01(\x0e2\x18.wafie.v1.ProtectionModeH\x00R\x0eprotectionMode\x88\x01\x01\x12J\n" +
-	"\rdesired_state\x18\x03 \x01(\v2 .wafie.v1.ProtectionDesiredStateH\x01R\fdesiredState\x88\x01\x01B\x12\n" +
-	"\x10_protection_modeB\x10\n" +
-	"\x0e_desired_state\"M\n" +
+	"\x0fprotection_mode\x18\x02 \x01(\x0e2\x18.wafie.v1.ProtectionModeH\x00R\x0eprotectionMode\x88\x01\x01\x12$\n" +
+	"\x03waf\x18\x03 \x01(\v2\r.wafie.v1.WafH\x01R\x03waf\x88\x01\x01\x124\n" +
+	"\x14xff_num_trusted_hops\x18\x04 \x01(\rH\x02R\x11xffNumTrustedHops\x88\x01\x01\x12=\n" +
+	"\x0fip_rules_to_add\x18\x05 \x01(\v2\x11.wafie.v1.IPRulesH\x03R\fipRulesToAdd\x88\x01\x01\x12C\n" +
+	"\x12ip_rules_to_remove\x18\x06 \x01(\v2\x11.wafie.v1.IPRulesH\x04R\x0fipRulesToRemove\x88\x01\x01B\x12\n" +
+	"\x10_protection_modeB\x06\n" +
+	"\x04_wafB\x17\n" +
+	"\x15_xff_num_trusted_hopsB\x12\n" +
+	"\x10_ip_rules_to_addB\x15\n" +
+	"\x13_ip_rules_to_remove\"M\n" +
 	"\x15PutProtectionResponse\x124\n" +
 	"\n" +
 	"protection\x18\x01 \x01(\v2\x14.wafie.v1.ProtectionR\n" +
@@ -1052,65 +1186,71 @@ func file_wafie_v1_protection_proto_rawDescGZIP() []byte {
 }
 
 var file_wafie_v1_protection_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_wafie_v1_protection_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_wafie_v1_protection_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_wafie_v1_protection_proto_goTypes = []any{
 	(ParanoiaLevel)(0),                       // 0: wafie.v1.ParanoiaLevel
 	(ProtectionMode)(0),                      // 1: wafie.v1.ProtectionMode
 	(GetProtectionOptionsIncludeCrsRules)(0), // 2: wafie.v1.GetProtectionOptionsIncludeCrsRules
-	(*ModSec)(nil),                           // 3: wafie.v1.ModSec
-	(*ProtectionDesiredState)(nil),           // 4: wafie.v1.ProtectionDesiredState
-	(*Protection)(nil),                       // 5: wafie.v1.Protection
-	(*CreateProtectionRequest)(nil),          // 6: wafie.v1.CreateProtectionRequest
-	(*CreateProtectionResponse)(nil),         // 7: wafie.v1.CreateProtectionResponse
-	(*GetProtectionOptions)(nil),             // 8: wafie.v1.GetProtectionOptions
-	(*GetProtectionRequest)(nil),             // 9: wafie.v1.GetProtectionRequest
-	(*GetProtectionResponse)(nil),            // 10: wafie.v1.GetProtectionResponse
-	(*PutProtectionRequest)(nil),             // 11: wafie.v1.PutProtectionRequest
-	(*PutProtectionResponse)(nil),            // 12: wafie.v1.PutProtectionResponse
-	(*ListProtectionsOptions)(nil),           // 13: wafie.v1.ListProtectionsOptions
-	(*ListProtectionsRequest)(nil),           // 14: wafie.v1.ListProtectionsRequest
-	(*ListProtectionsResponse)(nil),          // 15: wafie.v1.ListProtectionsResponse
-	(*DeleteProtectionRequest)(nil),          // 16: wafie.v1.DeleteProtectionRequest
-	(*DeleteProtectionResponse)(nil),         // 17: wafie.v1.DeleteProtectionResponse
-	(*Application)(nil),                      // 18: wafie.v1.Application
-	(*CrsVersion)(nil),                       // 19: wafie.v1.CrsVersion
+	(*IPBlockRule)(nil),                      // 3: wafie.v1.IPBlockRule
+	(*IPRules)(nil),                          // 4: wafie.v1.IPRules
+	(*Waf)(nil),                              // 5: wafie.v1.Waf
+	(*ProtectionDesiredState)(nil),           // 6: wafie.v1.ProtectionDesiredState
+	(*Protection)(nil),                       // 7: wafie.v1.Protection
+	(*CreateProtectionRequest)(nil),          // 8: wafie.v1.CreateProtectionRequest
+	(*CreateProtectionResponse)(nil),         // 9: wafie.v1.CreateProtectionResponse
+	(*GetProtectionOptions)(nil),             // 10: wafie.v1.GetProtectionOptions
+	(*GetProtectionRequest)(nil),             // 11: wafie.v1.GetProtectionRequest
+	(*GetProtectionResponse)(nil),            // 12: wafie.v1.GetProtectionResponse
+	(*PutProtectionRequest)(nil),             // 13: wafie.v1.PutProtectionRequest
+	(*PutProtectionResponse)(nil),            // 14: wafie.v1.PutProtectionResponse
+	(*ListProtectionsOptions)(nil),           // 15: wafie.v1.ListProtectionsOptions
+	(*ListProtectionsRequest)(nil),           // 16: wafie.v1.ListProtectionsRequest
+	(*ListProtectionsResponse)(nil),          // 17: wafie.v1.ListProtectionsResponse
+	(*DeleteProtectionRequest)(nil),          // 18: wafie.v1.DeleteProtectionRequest
+	(*DeleteProtectionResponse)(nil),         // 19: wafie.v1.DeleteProtectionResponse
+	(*Application)(nil),                      // 20: wafie.v1.Application
+	(*CrsVersion)(nil),                       // 21: wafie.v1.CrsVersion
 }
 var file_wafie_v1_protection_proto_depIdxs = []int32{
-	1,  // 0: wafie.v1.ModSec.protection_mode:type_name -> wafie.v1.ProtectionMode
-	0,  // 1: wafie.v1.ModSec.paranoia_level:type_name -> wafie.v1.ParanoiaLevel
-	3,  // 2: wafie.v1.ProtectionDesiredState.mode_sec:type_name -> wafie.v1.ModSec
-	18, // 3: wafie.v1.Protection.application:type_name -> wafie.v1.Application
-	1,  // 4: wafie.v1.Protection.protection_mode:type_name -> wafie.v1.ProtectionMode
-	4,  // 5: wafie.v1.Protection.desired_state:type_name -> wafie.v1.ProtectionDesiredState
-	19, // 6: wafie.v1.Protection.crs_versions:type_name -> wafie.v1.CrsVersion
-	1,  // 7: wafie.v1.CreateProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
-	4,  // 8: wafie.v1.CreateProtectionRequest.desired_state:type_name -> wafie.v1.ProtectionDesiredState
-	5,  // 9: wafie.v1.CreateProtectionResponse.protection:type_name -> wafie.v1.Protection
-	2,  // 10: wafie.v1.GetProtectionOptions.include_crs_rules:type_name -> wafie.v1.GetProtectionOptionsIncludeCrsRules
-	8,  // 11: wafie.v1.GetProtectionRequest.options:type_name -> wafie.v1.GetProtectionOptions
-	5,  // 12: wafie.v1.GetProtectionResponse.protection:type_name -> wafie.v1.Protection
-	1,  // 13: wafie.v1.PutProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
-	4,  // 14: wafie.v1.PutProtectionRequest.desired_state:type_name -> wafie.v1.ProtectionDesiredState
-	5,  // 15: wafie.v1.PutProtectionResponse.protection:type_name -> wafie.v1.Protection
-	1,  // 16: wafie.v1.ListProtectionsOptions.protection_mode:type_name -> wafie.v1.ProtectionMode
-	1,  // 17: wafie.v1.ListProtectionsOptions.mod_sec_mode:type_name -> wafie.v1.ProtectionMode
-	13, // 18: wafie.v1.ListProtectionsRequest.options:type_name -> wafie.v1.ListProtectionsOptions
-	5,  // 19: wafie.v1.ListProtectionsResponse.protections:type_name -> wafie.v1.Protection
-	6,  // 20: wafie.v1.ProtectionService.CreateProtection:input_type -> wafie.v1.CreateProtectionRequest
-	9,  // 21: wafie.v1.ProtectionService.GetProtection:input_type -> wafie.v1.GetProtectionRequest
-	14, // 22: wafie.v1.ProtectionService.ListProtections:input_type -> wafie.v1.ListProtectionsRequest
-	11, // 23: wafie.v1.ProtectionService.PutProtection:input_type -> wafie.v1.PutProtectionRequest
-	16, // 24: wafie.v1.ProtectionService.DeleteProtection:input_type -> wafie.v1.DeleteProtectionRequest
-	7,  // 25: wafie.v1.ProtectionService.CreateProtection:output_type -> wafie.v1.CreateProtectionResponse
-	10, // 26: wafie.v1.ProtectionService.GetProtection:output_type -> wafie.v1.GetProtectionResponse
-	15, // 27: wafie.v1.ProtectionService.ListProtections:output_type -> wafie.v1.ListProtectionsResponse
-	12, // 28: wafie.v1.ProtectionService.PutProtection:output_type -> wafie.v1.PutProtectionResponse
-	17, // 29: wafie.v1.ProtectionService.DeleteProtection:output_type -> wafie.v1.DeleteProtectionResponse
-	25, // [25:30] is the sub-list for method output_type
-	20, // [20:25] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	3,  // 0: wafie.v1.IPRules.ip_block_rules:type_name -> wafie.v1.IPBlockRule
+	1,  // 1: wafie.v1.Waf.protection_mode:type_name -> wafie.v1.ProtectionMode
+	0,  // 2: wafie.v1.Waf.paranoia_level:type_name -> wafie.v1.ParanoiaLevel
+	5,  // 3: wafie.v1.ProtectionDesiredState.waf:type_name -> wafie.v1.Waf
+	4,  // 4: wafie.v1.ProtectionDesiredState.ip_rules:type_name -> wafie.v1.IPRules
+	20, // 5: wafie.v1.Protection.application:type_name -> wafie.v1.Application
+	1,  // 6: wafie.v1.Protection.protection_mode:type_name -> wafie.v1.ProtectionMode
+	6,  // 7: wafie.v1.Protection.desired_state:type_name -> wafie.v1.ProtectionDesiredState
+	21, // 8: wafie.v1.Protection.crs_versions:type_name -> wafie.v1.CrsVersion
+	1,  // 9: wafie.v1.CreateProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
+	6,  // 10: wafie.v1.CreateProtectionRequest.desired_state:type_name -> wafie.v1.ProtectionDesiredState
+	7,  // 11: wafie.v1.CreateProtectionResponse.protection:type_name -> wafie.v1.Protection
+	2,  // 12: wafie.v1.GetProtectionOptions.include_crs_rules:type_name -> wafie.v1.GetProtectionOptionsIncludeCrsRules
+	10, // 13: wafie.v1.GetProtectionRequest.options:type_name -> wafie.v1.GetProtectionOptions
+	7,  // 14: wafie.v1.GetProtectionResponse.protection:type_name -> wafie.v1.Protection
+	1,  // 15: wafie.v1.PutProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
+	5,  // 16: wafie.v1.PutProtectionRequest.waf:type_name -> wafie.v1.Waf
+	4,  // 17: wafie.v1.PutProtectionRequest.ip_rules_to_add:type_name -> wafie.v1.IPRules
+	4,  // 18: wafie.v1.PutProtectionRequest.ip_rules_to_remove:type_name -> wafie.v1.IPRules
+	7,  // 19: wafie.v1.PutProtectionResponse.protection:type_name -> wafie.v1.Protection
+	1,  // 20: wafie.v1.ListProtectionsOptions.protection_mode:type_name -> wafie.v1.ProtectionMode
+	1,  // 21: wafie.v1.ListProtectionsOptions.mod_sec_mode:type_name -> wafie.v1.ProtectionMode
+	15, // 22: wafie.v1.ListProtectionsRequest.options:type_name -> wafie.v1.ListProtectionsOptions
+	7,  // 23: wafie.v1.ListProtectionsResponse.protections:type_name -> wafie.v1.Protection
+	8,  // 24: wafie.v1.ProtectionService.CreateProtection:input_type -> wafie.v1.CreateProtectionRequest
+	11, // 25: wafie.v1.ProtectionService.GetProtection:input_type -> wafie.v1.GetProtectionRequest
+	16, // 26: wafie.v1.ProtectionService.ListProtections:input_type -> wafie.v1.ListProtectionsRequest
+	13, // 27: wafie.v1.ProtectionService.PutProtection:input_type -> wafie.v1.PutProtectionRequest
+	18, // 28: wafie.v1.ProtectionService.DeleteProtection:input_type -> wafie.v1.DeleteProtectionRequest
+	9,  // 29: wafie.v1.ProtectionService.CreateProtection:output_type -> wafie.v1.CreateProtectionResponse
+	12, // 30: wafie.v1.ProtectionService.GetProtection:output_type -> wafie.v1.GetProtectionResponse
+	17, // 31: wafie.v1.ProtectionService.ListProtections:output_type -> wafie.v1.ListProtectionsResponse
+	14, // 32: wafie.v1.ProtectionService.PutProtection:output_type -> wafie.v1.PutProtectionResponse
+	19, // 33: wafie.v1.ProtectionService.DeleteProtection:output_type -> wafie.v1.DeleteProtectionResponse
+	29, // [29:34] is the sub-list for method output_type
+	24, // [24:29] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_wafie_v1_protection_proto_init() }
@@ -1120,18 +1260,19 @@ func file_wafie_v1_protection_proto_init() {
 	}
 	file_wafie_v1_application_proto_init()
 	file_wafie_v1_crs_proto_init()
-	file_wafie_v1_protection_proto_msgTypes[2].OneofWrappers = []any{}
-	file_wafie_v1_protection_proto_msgTypes[5].OneofWrappers = []any{}
-	file_wafie_v1_protection_proto_msgTypes[6].OneofWrappers = []any{}
+	file_wafie_v1_protection_proto_msgTypes[3].OneofWrappers = []any{}
+	file_wafie_v1_protection_proto_msgTypes[4].OneofWrappers = []any{}
+	file_wafie_v1_protection_proto_msgTypes[7].OneofWrappers = []any{}
 	file_wafie_v1_protection_proto_msgTypes[8].OneofWrappers = []any{}
 	file_wafie_v1_protection_proto_msgTypes[10].OneofWrappers = []any{}
+	file_wafie_v1_protection_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_wafie_v1_protection_proto_rawDesc), len(file_wafie_v1_protection_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

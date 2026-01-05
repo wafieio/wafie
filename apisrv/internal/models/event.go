@@ -47,11 +47,6 @@ type Event struct {
 	Data EventData `gorm:"column:data;type:jsonb"`
 }
 
-// TableName overrides the default table name
-func (Event) TableName() string {
-	return "events"
-}
-
 func NewEventRepository(tx *gorm.DB, logger *zap.Logger) *EventRepository {
 	repo := &EventRepository{db: tx, logger: logger}
 	if tx == nil {

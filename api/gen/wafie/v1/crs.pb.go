@@ -290,6 +290,146 @@ func (x *CrsRuleSet) GetMd5() string {
 	return ""
 }
 
+type Rule struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Base64Rule      []string               `protobuf:"bytes,1,rep,name=base64_rule,json=base64Rule,proto3" json:"base64_rule,omitempty"`
+	RuleSetId       uint32                 `protobuf:"varint,2,opt,name=rule_set_id,json=ruleSetId,proto3" json:"rule_set_id,omitempty"`
+	ApplicationName string                 `protobuf:"bytes,3,opt,name=application_name,json=applicationName,proto3" json:"application_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Rule) Reset() {
+	*x = Rule{}
+	mi := &file_wafie_v1_crs_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Rule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Rule) ProtoMessage() {}
+
+func (x *Rule) ProtoReflect() protoreflect.Message {
+	mi := &file_wafie_v1_crs_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Rule.ProtoReflect.Descriptor instead.
+func (*Rule) Descriptor() ([]byte, []int) {
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Rule) GetBase64Rule() []string {
+	if x != nil {
+		return x.Base64Rule
+	}
+	return nil
+}
+
+func (x *Rule) GetRuleSetId() uint32 {
+	if x != nil {
+		return x.RuleSetId
+	}
+	return 0
+}
+
+func (x *Rule) GetApplicationName() string {
+	if x != nil {
+		return x.ApplicationName
+	}
+	return ""
+}
+
+type CreateRuleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rule          *Rule                  `protobuf:"bytes,1,opt,name=rule,proto3" json:"rule,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRuleRequest) Reset() {
+	*x = CreateRuleRequest{}
+	mi := &file_wafie_v1_crs_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRuleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRuleRequest) ProtoMessage() {}
+
+func (x *CreateRuleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_wafie_v1_crs_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRuleRequest.ProtoReflect.Descriptor instead.
+func (*CreateRuleRequest) Descriptor() ([]byte, []int) {
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CreateRuleRequest) GetRule() *Rule {
+	if x != nil {
+		return x.Rule
+	}
+	return nil
+}
+
+type CreateRuleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRuleResponse) Reset() {
+	*x = CreateRuleResponse{}
+	mi := &file_wafie_v1_crs_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRuleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRuleResponse) ProtoMessage() {}
+
+func (x *CreateRuleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_wafie_v1_crs_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRuleResponse.ProtoReflect.Descriptor instead.
+func (*CreateRuleResponse) Descriptor() ([]byte, []int) {
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{5}
+}
+
 type CreateCrsVersionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Version       *CrsVersion            `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
@@ -299,7 +439,7 @@ type CreateCrsVersionRequest struct {
 
 func (x *CreateCrsVersionRequest) Reset() {
 	*x = CreateCrsVersionRequest{}
-	mi := &file_wafie_v1_crs_proto_msgTypes[3]
+	mi := &file_wafie_v1_crs_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +451,7 @@ func (x *CreateCrsVersionRequest) String() string {
 func (*CreateCrsVersionRequest) ProtoMessage() {}
 
 func (x *CreateCrsVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_crs_proto_msgTypes[3]
+	mi := &file_wafie_v1_crs_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -324,7 +464,7 @@ func (x *CreateCrsVersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCrsVersionRequest.ProtoReflect.Descriptor instead.
 func (*CreateCrsVersionRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{3}
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateCrsVersionRequest) GetVersion() *CrsVersion {
@@ -343,7 +483,7 @@ type CreateCrsVersionResponse struct {
 
 func (x *CreateCrsVersionResponse) Reset() {
 	*x = CreateCrsVersionResponse{}
-	mi := &file_wafie_v1_crs_proto_msgTypes[4]
+	mi := &file_wafie_v1_crs_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +495,7 @@ func (x *CreateCrsVersionResponse) String() string {
 func (*CreateCrsVersionResponse) ProtoMessage() {}
 
 func (x *CreateCrsVersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_crs_proto_msgTypes[4]
+	mi := &file_wafie_v1_crs_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +508,7 @@ func (x *CreateCrsVersionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCrsVersionResponse.ProtoReflect.Descriptor instead.
 func (*CreateCrsVersionResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{4}
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateCrsVersionResponse) GetVersion() *CrsVersion {
@@ -388,7 +528,7 @@ type CreateCrsRuleSetRequest struct {
 
 func (x *CreateCrsRuleSetRequest) Reset() {
 	*x = CreateCrsRuleSetRequest{}
-	mi := &file_wafie_v1_crs_proto_msgTypes[5]
+	mi := &file_wafie_v1_crs_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -400,7 +540,7 @@ func (x *CreateCrsRuleSetRequest) String() string {
 func (*CreateCrsRuleSetRequest) ProtoMessage() {}
 
 func (x *CreateCrsRuleSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_crs_proto_msgTypes[5]
+	mi := &file_wafie_v1_crs_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -413,7 +553,7 @@ func (x *CreateCrsRuleSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCrsRuleSetRequest.ProtoReflect.Descriptor instead.
 func (*CreateCrsRuleSetRequest) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{5}
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateCrsRuleSetRequest) GetCrsVersionId() uint32 {
@@ -438,7 +578,7 @@ type CreateCrsRuleSetResponse struct {
 
 func (x *CreateCrsRuleSetResponse) Reset() {
 	*x = CreateCrsRuleSetResponse{}
-	mi := &file_wafie_v1_crs_proto_msgTypes[6]
+	mi := &file_wafie_v1_crs_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +590,7 @@ func (x *CreateCrsRuleSetResponse) String() string {
 func (*CreateCrsRuleSetResponse) ProtoMessage() {}
 
 func (x *CreateCrsRuleSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafie_v1_crs_proto_msgTypes[6]
+	mi := &file_wafie_v1_crs_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +603,7 @@ func (x *CreateCrsRuleSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCrsRuleSetResponse.ProtoReflect.Descriptor instead.
 func (*CreateCrsRuleSetResponse) Descriptor() ([]byte, []int) {
-	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{6}
+	return file_wafie_v1_crs_proto_rawDescGZIP(), []int{9}
 }
 
 var File_wafie_v1_crs_proto protoreflect.FileDescriptor
@@ -491,7 +631,15 @@ const file_wafie_v1_crs_proto_rawDesc = "" +
 	"\rcrs_file_name\x18\x02 \x01(\tR\vcrsFileName\x12(\n" +
 	"\x10crs_file_content\x18\x03 \x01(\tR\x0ecrsFileContent\x12$\n" +
 	"\x0ecrs_version_id\x18\x05 \x01(\rR\fcrsVersionId\x12\x10\n" +
-	"\x03md5\x18\x06 \x01(\tR\x03md5\"I\n" +
+	"\x03md5\x18\x06 \x01(\tR\x03md5\"r\n" +
+	"\x04Rule\x12\x1f\n" +
+	"\vbase64_rule\x18\x01 \x03(\tR\n" +
+	"base64Rule\x12\x1e\n" +
+	"\vrule_set_id\x18\x02 \x01(\rR\truleSetId\x12)\n" +
+	"\x10application_name\x18\x03 \x01(\tR\x0fapplicationName\"7\n" +
+	"\x11CreateRuleRequest\x12\"\n" +
+	"\x04rule\x18\x01 \x01(\v2\x0e.wafie.v1.RuleR\x04rule\"\x14\n" +
+	"\x12CreateRuleResponse\"I\n" +
 	"\x17CreateCrsVersionRequest\x12.\n" +
 	"\aversion\x18\x01 \x01(\v2\x14.wafie.v1.CrsVersionR\aversion\"J\n" +
 	"\x18CreateCrsVersionResponse\x12.\n" +
@@ -503,11 +651,13 @@ const file_wafie_v1_crs_proto_rawDesc = "" +
 	"\x10CrsVersionStatus\x12\"\n" +
 	"\x1eCRS_VERSION_STATUS_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19CRS_VERSION_STATUS_ACTIVE\x10\x01\x12\x1f\n" +
-	"\x1bCRS_VERSION_STATUS_INACTIVE\x10\x022\xc2\x01\n" +
+	"\x1bCRS_VERSION_STATUS_INACTIVE\x10\x022\x8b\x02\n" +
 	"\n" +
 	"CrsService\x12Y\n" +
 	"\x10CreateCrsVersion\x12!.wafie.v1.CreateCrsVersionRequest\x1a\".wafie.v1.CreateCrsVersionResponse\x12Y\n" +
-	"\x10CreateCrsRuleSet\x12!.wafie.v1.CreateCrsRuleSetRequest\x1a\".wafie.v1.CreateCrsRuleSetResponseB\x8c\x01\n" +
+	"\x10CreateCrsRuleSet\x12!.wafie.v1.CreateCrsRuleSetRequest\x1a\".wafie.v1.CreateCrsRuleSetResponse\x12G\n" +
+	"\n" +
+	"CreateRule\x12\x1b.wafie.v1.CreateRuleRequest\x1a\x1c.wafie.v1.CreateRuleResponseB\x8c\x01\n" +
 	"\fcom.wafie.v1B\bCrsProtoP\x01Z1github.com/wafieio/wafie/api/gen/wafie/v1;wafiev1\xa2\x02\x03WXX\xaa\x02\bWafie.V1\xca\x02\bWafie\\V1\xe2\x02\x14Wafie\\V1\\GPBMetadata\xea\x02\tWafie::V1b\x06proto3"
 
 var (
@@ -523,31 +673,37 @@ func file_wafie_v1_crs_proto_rawDescGZIP() []byte {
 }
 
 var file_wafie_v1_crs_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_wafie_v1_crs_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_wafie_v1_crs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_wafie_v1_crs_proto_goTypes = []any{
 	(CrsVersionStatus)(0),            // 0: wafie.v1.CrsVersionStatus
 	(*CrsProfile)(nil),               // 1: wafie.v1.CrsProfile
 	(*CrsVersion)(nil),               // 2: wafie.v1.CrsVersion
 	(*CrsRuleSet)(nil),               // 3: wafie.v1.CrsRuleSet
-	(*CreateCrsVersionRequest)(nil),  // 4: wafie.v1.CreateCrsVersionRequest
-	(*CreateCrsVersionResponse)(nil), // 5: wafie.v1.CreateCrsVersionResponse
-	(*CreateCrsRuleSetRequest)(nil),  // 6: wafie.v1.CreateCrsRuleSetRequest
-	(*CreateCrsRuleSetResponse)(nil), // 7: wafie.v1.CreateCrsRuleSetResponse
+	(*Rule)(nil),                     // 4: wafie.v1.Rule
+	(*CreateRuleRequest)(nil),        // 5: wafie.v1.CreateRuleRequest
+	(*CreateRuleResponse)(nil),       // 6: wafie.v1.CreateRuleResponse
+	(*CreateCrsVersionRequest)(nil),  // 7: wafie.v1.CreateCrsVersionRequest
+	(*CreateCrsVersionResponse)(nil), // 8: wafie.v1.CreateCrsVersionResponse
+	(*CreateCrsRuleSetRequest)(nil),  // 9: wafie.v1.CreateCrsRuleSetRequest
+	(*CreateCrsRuleSetResponse)(nil), // 10: wafie.v1.CreateCrsRuleSetResponse
 }
 var file_wafie_v1_crs_proto_depIdxs = []int32{
-	0, // 0: wafie.v1.CrsVersion.status:type_name -> wafie.v1.CrsVersionStatus
-	3, // 1: wafie.v1.CrsVersion.crs_rule_sets:type_name -> wafie.v1.CrsRuleSet
-	2, // 2: wafie.v1.CreateCrsVersionRequest.version:type_name -> wafie.v1.CrsVersion
-	2, // 3: wafie.v1.CreateCrsVersionResponse.version:type_name -> wafie.v1.CrsVersion
-	4, // 4: wafie.v1.CrsService.CreateCrsVersion:input_type -> wafie.v1.CreateCrsVersionRequest
-	6, // 5: wafie.v1.CrsService.CreateCrsRuleSet:input_type -> wafie.v1.CreateCrsRuleSetRequest
-	5, // 6: wafie.v1.CrsService.CreateCrsVersion:output_type -> wafie.v1.CreateCrsVersionResponse
-	7, // 7: wafie.v1.CrsService.CreateCrsRuleSet:output_type -> wafie.v1.CreateCrsRuleSetResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0,  // 0: wafie.v1.CrsVersion.status:type_name -> wafie.v1.CrsVersionStatus
+	3,  // 1: wafie.v1.CrsVersion.crs_rule_sets:type_name -> wafie.v1.CrsRuleSet
+	4,  // 2: wafie.v1.CreateRuleRequest.rule:type_name -> wafie.v1.Rule
+	2,  // 3: wafie.v1.CreateCrsVersionRequest.version:type_name -> wafie.v1.CrsVersion
+	2,  // 4: wafie.v1.CreateCrsVersionResponse.version:type_name -> wafie.v1.CrsVersion
+	7,  // 5: wafie.v1.CrsService.CreateCrsVersion:input_type -> wafie.v1.CreateCrsVersionRequest
+	9,  // 6: wafie.v1.CrsService.CreateCrsRuleSet:input_type -> wafie.v1.CreateCrsRuleSetRequest
+	5,  // 7: wafie.v1.CrsService.CreateRule:input_type -> wafie.v1.CreateRuleRequest
+	8,  // 8: wafie.v1.CrsService.CreateCrsVersion:output_type -> wafie.v1.CreateCrsVersionResponse
+	10, // 9: wafie.v1.CrsService.CreateCrsRuleSet:output_type -> wafie.v1.CreateCrsRuleSetResponse
+	6,  // 10: wafie.v1.CrsService.CreateRule:output_type -> wafie.v1.CreateRuleResponse
+	8,  // [8:11] is the sub-list for method output_type
+	5,  // [5:8] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_wafie_v1_crs_proto_init() }
@@ -562,7 +718,7 @@ func file_wafie_v1_crs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_wafie_v1_crs_proto_rawDesc), len(file_wafie_v1_crs_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
