@@ -248,6 +248,7 @@ func getContainerNetworkNs(containerStatusResponse *runtimeapi.ContainerStatusRe
 
 func parseContainerId(containerId string) (id string, runtimeSock string, err error) {
 	slice := strings.Split(containerId, "://")
+	// TODO: this should be executed with retry!
 	if len(slice) != 2 {
 		return "", "", fmt.Errorf("unable to parse container id")
 	}

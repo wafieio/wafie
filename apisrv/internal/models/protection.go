@@ -112,66 +112,64 @@ func (s *ProtectionDesiredState) Merge(putProtectionReq *wv1.PutProtectionReques
 		s.XffNumTrustedHops = putProtectionReq.XffNumTrustedHops
 	}
 	// if current IP Rules is empty, just set it accordingly to request
-	if s.IPRules == nil && putProtectionReq.IpRulesToAdd != nil {
+	if s.IPRules == nil {
 		s.IPRules = &IPRules{}
-		s.IPRules.FromProto(putProtectionReq.IpRulesToAdd)
-	} else {
-		var ipBlockRules []*wv1.IPBlockRule
-		// remove IP rules
-		if putProtectionReq.IpRulesToRemove != nil {
-			for _, currentRule := range s.IPRules.IPBlockRules {
-				found := false
-				for _, ruleToRemove := range putProtectionReq.IpRulesToRemove.IpBlockRules {
-					if currentRule.CIDR == ruleToRemove.Cidr {
-						found = true
-					}
-				}
-				// add IP Rule only if it's not intended for deletion
-				if !found {
-					ipBlockRules = append(ipBlockRules, &wv1.IPBlockRule{Cidr: currentRule.CIDR})
-				}
-			}
-		}
-		// add IP rules without duplicates
-		if putProtectionReq.IpRulesToAdd != nil {
-			for _, newRule := range putProtectionReq.IpRulesToAdd.IpBlockRules {
-				found := false
-				for _, currentRule := range s.IPRules.IPBlockRules {
-					if currentRule.CIDR == newRule.Cidr {
-						found = true
-					}
-				}
-				if !found {
-					ipBlockRules = append(ipBlockRules, newRule)
-				}
-			}
-		}
-		s.IPRules.FromProto(&wv1.IPRules{IpBlockRules: ipBlockRules})
-
-		// if IPRules was set by the request
-		//if putProtectionReq.IpRulesToAdd != nil {
-		//	// if current protection has no IPRules, set it
-		//	if s.IPRules == nil {
-		//		s.IPRules = &IPRules{IPBlockRules: putProtectionReq.IpRulesToAdd.IPBlockRules}
-		//		// fully overwrite ip block rules in case they were fully empty
-		//	} else if len(newDesiredState.IPRules.IPBlockRules) == 0 {
-		//		s.IPRules.IPBlockRules = newDesiredState.IPRules.IPBlockRules
-		//	} else {
-		//		// the ip block rules already present, make sure we've no duplicates
-		//		for _, newIpBlockRule := range newDesiredState.IPRules.IPBlockRules {
-		//			newIpRuleFound := false
-		//			for _, ipBlockRule := range s.IPRules.IPBlockRules {
-		//				if newIpBlockRule == ipBlockRule {
-		//					newIpRuleFound = true
-		//				}
-		//			}
-		//			if !newIpRuleFound {
-		//				s.IPRules.IPBlockRules = append(s.IPRules.IPBlockRules, newIpBlockRule)
-		//			}
-		//		}
-		//	}
-		//}
 	}
+	var ipBlockRules []*wv1.IPBlockRule
+	// remove IP rules
+	if putProtectionReq.IpRulesToRemove != nil {
+		for _, currentRule := range s.IPRules.IPBlockRules {
+			found := false
+			for _, ruleToRemove := range putProtectionReq.IpRulesToRemove.IpBlockRules {
+				if currentRule.CIDR == ruleToRemove.Cidr {
+					found = true
+				}
+			}
+			// add IP Rule only if it's not intended for deletion
+			if !found {
+				ipBlockRules = append(ipBlockRules, &wv1.IPBlockRule{Cidr: currentRule.CIDR})
+			}
+		}
+	}
+	// add IP rules without duplicates
+	if putProtectionReq.IpRulesToAdd != nil {
+		for _, newRule := range putProtectionReq.IpRulesToAdd.IpBlockRules {
+			found := false
+			for _, currentRule := range s.IPRules.IPBlockRules {
+				if currentRule.CIDR == newRule.Cidr {
+					found = true
+				}
+			}
+			if !found {
+				ipBlockRules = append(ipBlockRules, newRule)
+			}
+		}
+	}
+	s.IPRules.FromProto(&wv1.IPRules{IpBlockRules: ipBlockRules})
+
+	// if IPRules was set by the request
+	//if putProtectionReq.IpRulesToAdd != nil {
+	//	// if current protection has no IPRules, set it
+	//	if s.IPRules == nil {
+	//		s.IPRules = &IPRules{IPBlockRules: putProtectionReq.IpRulesToAdd.IPBlockRules}
+	//		// fully overwrite ip block rules in case they were fully empty
+	//	} else if len(newDesiredState.IPRules.IPBlockRules) == 0 {
+	//		s.IPRules.IPBlockRules = newDesiredState.IPRules.IPBlockRules
+	//	} else {
+	//		// the ip block rules already present, make sure we've no duplicates
+	//		for _, newIpBlockRule := range newDesiredState.IPRules.IPBlockRules {
+	//			newIpRuleFound := false
+	//			for _, ipBlockRule := range s.IPRules.IPBlockRules {
+	//				if newIpBlockRule == ipBlockRule {
+	//					newIpRuleFound = true
+	//				}
+	//			}
+	//			if !newIpRuleFound {
+	//				s.IPRules.IPBlockRules = append(s.IPRules.IPBlockRules, newIpBlockRule)
+	//			}
+	//		}
+	//	}
+	//}
 
 	//s.IPRules.FromProto(putProtectionReq.IpRulesToAdd)
 }

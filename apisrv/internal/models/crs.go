@@ -174,6 +174,9 @@ func (r *CRSRepository) ProtectionDesiredState(crsVersionId uint) (*ProtectionDe
 		First(p).Error; err != nil {
 		return nil, err
 	}
+	if p.DesiredState.IPRules == nil {
+		p.DesiredState.IPRules = &IPRules{}
+	}
 	//err := ruleSet.Render(&p.DesiredState)
 	return &p.DesiredState, nil
 }

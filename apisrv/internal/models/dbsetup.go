@@ -100,13 +100,12 @@ func seed(db *gorm.DB) error {
 func seedCrsProfiles(db *gorm.DB) error {
 
 	crsRepo := NewCrsRepository(db, nil)
-	profileRules := crsRepo.GetProfileRulesByName(DefaultCRSProfileName)
-	if len(profileRules) > 0 {
-		return nil
-	}
 	crsProfiles := []string{FullCRSProfileName, EmptyCRSProfileName}
 	for _, crsProfile := range crsProfiles {
-
+		// if rules already present for given profile do not seed them
+		if len(crsRepo.GetProfileRulesByName(crsProfile)) > 0 {
+			continue
+		}
 		rules, err := modsec.CRSRuleSet(crsProfile)
 		if err != nil {
 			return err

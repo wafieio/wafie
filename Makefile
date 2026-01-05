@@ -66,15 +66,17 @@ relay.image:
 	podman manifest push relay $(REGISTRY)/relay:latest
 
 
+images: api.image gateway.image xproc.image relay.image
+	@echo "images built successfully"
+
+
 helm:
 	helm package chart
 	@kubeconfig=$$(readlink -f ~/.kube/wafie-stg); \
 	charts_pod=$$(kubectl get pod -lapp=nginx -ncharts --kubeconfig "$$kubeconfig" -o jsonpath="{.items[0].metadata.name}"); \
 	kubectl cp wafie-0.0.1.tgz $$charts_pod:/usr/share/nginx/html -c helm -ncharts --kubeconfig $$kubeconfig; \
 	kubectl exec $$charts_pod -c helm -ncharts --kubeconfig $$kubeconfig -- /bin/bash -c "cd /usr/share/nginx/html && helm repo index ."
-	#scp wafie-0.0.1.tgz stg:/var/www/charts
-	#ssh root@charts.wafie.io "helm repo index /var/www/charts"
-	#rm wafie-0.0.1.tgz
+	rm wafie-0.0.1.tgz
 
 
 .PHONY: proto
