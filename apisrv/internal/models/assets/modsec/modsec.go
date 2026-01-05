@@ -8,12 +8,12 @@ import (
 
 // Embed mod sec configuration template files
 //
-//go:embed crs
+//go:embed profiles
 var crsFS embed.FS
 
-func CRSRuleSet() (map[string]string, error) {
+func CRSRuleSet(profileDir string) (map[string]string, error) {
 	modsecConfig := map[string]string{}
-	root := "crs"
+	root := "profiles/" + profileDir
 	err := fs.WalkDir(crsFS, root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -26,8 +26,10 @@ func CRSRuleSet() (map[string]string, error) {
 		if err != nil {
 			return err
 		}
-		// remove crs/ prefix from the path
-		modsecConfig[strings.Replace(path, "crs/", "", 1)] = string(data)
+		// remove "profiles/" + profileDir + "/" prefix from the path
+		// expected path example 1: crs-setup.conf
+		// expected path example 2: rules/REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf
+		modsecConfig[strings.Replace(path, root+"/", "", 1)] = string(data)
 		return nil
 	})
 

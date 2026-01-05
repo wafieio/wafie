@@ -10,6 +10,7 @@ api:
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 api.image:
+	podman manifest rm api --ignore
 	podman build \
       --manifest api \
       --platform linux/arm64,linux/amd64 \
@@ -24,6 +25,7 @@ gateway:
 		-o .bin/gateway gateway/cmd/main.go
 
 gateway.image:
+	podman manifest rm gateway --ignore
 	podman build \
         --manifest gateway \
         --platform linux/arm64,linux/amd64 \
@@ -35,6 +37,7 @@ xproc:
 	go build -o .bin/xproc xproc/cmd/main.go
 
 xproc.image:
+	podman manifest rm xproc --ignore
 	podman build \
         --manifest xproc \
         --platform linux/arm64,linux/amd64 \
@@ -54,6 +57,7 @@ relay:
 	go build -o .bin/wafie-relay relay/cmd/main.go
 
 relay.image:
+	podman manifest rm relay --ignore
 	podman build \
       --manifest relay \
       --secret id=buf_auth_token,src=./api/buf_auth_token \

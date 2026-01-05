@@ -47,7 +47,7 @@ func newState(xprocSocket string) *state {
 }
 
 func (s *state) wafieXprocFilter(protection *wv1.Protection) *hcm.HttpFilter {
-	if protection.DesiredState.ModeSec.ProtectionMode != wv1.ProtectionMode_PROTECTION_MODE_ON {
+	if protection.ProtectionMode != wv1.ProtectionMode_PROTECTION_MODE_ON {
 		return nil
 	}
 	xproc := &extproc.ExternalProcessor{
@@ -253,12 +253,16 @@ func (s *state) wafieXprocCluster() *cluster.Cluster {
 
 func (s *state) httpConnectionManager(protection *wv1.Protection) *hcm.HttpConnectionManager {
 	stdoutLogs, _ := anypb.New(&stream.StdoutAccessLog{})
+	var trustedHops uint32
+	if protection.DesiredState.XffNumTrustedHops != nil {
+		trustedHops = *protection.DesiredState.XffNumTrustedHops
+	}
 	return &hcm.HttpConnectionManager{
 		CodecType:         hcm.HttpConnectionManager_AUTO,
 		StatPrefix:        "http",
 		GenerateRequestId: &wrappers.BoolValue{Value: true},
 		UseRemoteAddress:  &wrappers.BoolValue{Value: false},
-		XffNumTrustedHops: protection.DesiredState.XffNumTrustedHops,
+		XffNumTrustedHops: trustedHops,
 		AccessLog: []*accesslog.AccessLog{
 			{
 				Name: "envoy.access_loggers.stdout",

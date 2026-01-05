@@ -34,6 +34,6 @@ func init() {
 		// setup viper
 		viper.AutomaticEnv()
 		viper.SetEnvPrefix("CWAF_API_SERVER")
-		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	})
 }

@@ -70,3 +70,11 @@ helm install openebs openebs/openebs \
   --set alloy.enabled=false \
   --namespace openebs \
   --create-namespace
+
+
+helm repo add openebs-nfs https://openebs-archive.github.io/dynamic-nfs-provisioner
+helm repo update
+helm install openebs-nfs openebs-nfs/nfs-provisioner \
+  --namespace openebs \
+  --create-namespace \
+  --set nfsStorageClass.backendStorageClass="openebs-nfs"
