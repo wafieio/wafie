@@ -1,0 +1,3 @@
+{{{range $index, $ip := .IPRules.Allow}}}
+  {{{- $ip.CIDR }}}
+{{{end}}}
