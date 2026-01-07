@@ -122,17 +122,19 @@ func (s *ProtectionDesiredState) Merge(putProtectionReq *wv1.PutProtectionReques
 func (p *IPRules) Merge(putProtectionReq *wv1.PutProtectionRequest) {
 	var block []*wv1.IP
 	var allow []*wv1.IP
-	// remove block IP rules
+	// remove IPs
 	if putProtectionReq.IpRulesToRemove != nil {
-		allow = append(block, removeIPs(p.Block, putProtectionReq.IpRulesToRemove.Allow)...)
+		// remove from allow list
+		allow = append(allow, removeIPs(p.Allow, putProtectionReq.IpRulesToRemove.Allow)...)
+		// remove from block list
 		block = append(block, removeIPs(p.Block, putProtectionReq.IpRulesToRemove.Block)...)
-
 	}
-	// add block IP rules without duplicates
+	// add IPs
 	if putProtectionReq.IpRulesToAdd != nil {
-		allow = append(block, addIPs(p.Block, putProtectionReq.IpRulesToAdd.Allow)...)
+		//add to allow list
+		allow = append(allow, addIPs(p.Allow, putProtectionReq.IpRulesToAdd.Allow)...)
+		// add to block list
 		block = append(block, addIPs(p.Block, putProtectionReq.IpRulesToAdd.Block)...)
-
 	}
 	p.FromProto(&wv1.IPRules{Allow: allow, Block: block})
 }
@@ -185,7 +187,7 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 			block[idx] = &wv1.IP{Cidr: ip.CIDR}
 		}
 		var allow = make([]*wv1.IP, len(s.IPRules.Allow))
-		for idx, ip := range s.IPRules.Block {
+		for idx, ip := range s.IPRules.Allow {
 			allow[idx] = &wv1.IP{Cidr: ip.CIDR}
 		}
 		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
@@ -355,10 +357,23 @@ func (s *ProtectionRepository) DeleteProtection(protectionId uint32) error {
 
 // addIPs add IPs without duplications
 func addIPs(current []IP, fromReq []*wv1.IP) (resultIps []*wv1.IP) {
+	// add existing IPs without duplicates
+	for _, currentIP := range current {
+		found := false
+		for _, reqIP := range fromReq {
+			if currentIP.CIDR == reqIP.Cidr {
+				found = true
+			}
+		}
+		if !found {
+			resultIps = append(resultIps, &wv1.IP{Cidr: currentIP.CIDR})
+		}
+	}
+	// add new IPs
 	for _, reqIP := range fromReq {
 		found := false
-		for _, currentIP := range current {
-			if currentIP.CIDR == reqIP.Cidr {
+		for _, currentIP := range resultIps {
+			if currentIP.Cidr == reqIP.Cidr {
 				found = true
 			}
 		}
@@ -366,7 +381,7 @@ func addIPs(current []IP, fromReq []*wv1.IP) (resultIps []*wv1.IP) {
 			resultIps = append(resultIps, reqIP)
 		}
 	}
-	return
+	return resultIps
 }
 
 // removeIPs remove ips
