@@ -26,11 +26,12 @@ type Waf struct {
 	ParanoiaLevel uint32 `json:"paranoiaLevel"`
 }
 
-type IPBlockRule struct {
+type IP struct {
 	CIDR string `json:"cidr"`
 }
 type IPRules struct {
-	IPBlockRules []IPBlockRule `json:"ipBlockRules"`
+	Block []IP `json:"block"`
+	Allow []IP `json:"allow"`
 }
 type ProtectionDesiredState struct {
 	Waf               *Waf     `json:"waf"`
@@ -115,67 +116,29 @@ func (s *ProtectionDesiredState) Merge(putProtectionReq *wv1.PutProtectionReques
 	if s.IPRules == nil {
 		s.IPRules = &IPRules{}
 	}
-	var ipBlockRules []*wv1.IPBlockRule
-	// remove IP rules
+	s.IPRules.Merge(putProtectionReq)
+}
+
+func (p *IPRules) Merge(putProtectionReq *wv1.PutProtectionRequest) {
+	var block []*wv1.IP
+	var allow []*wv1.IP
+	// remove block IP rules
 	if putProtectionReq.IpRulesToRemove != nil {
-		for _, currentRule := range s.IPRules.IPBlockRules {
-			found := false
-			for _, ruleToRemove := range putProtectionReq.IpRulesToRemove.IpBlockRules {
-				if currentRule.CIDR == ruleToRemove.Cidr {
-					found = true
-				}
-			}
-			// add IP Rule only if it's not intended for deletion
-			if !found {
-				ipBlockRules = append(ipBlockRules, &wv1.IPBlockRule{Cidr: currentRule.CIDR})
-			}
-		}
+		allow = append(block, removeIPs(p.Block, putProtectionReq.IpRulesToRemove.Allow)...)
+		block = append(block, removeIPs(p.Block, putProtectionReq.IpRulesToRemove.Block)...)
+
 	}
-	// add IP rules without duplicates
+	// add block IP rules without duplicates
 	if putProtectionReq.IpRulesToAdd != nil {
-		for _, newRule := range putProtectionReq.IpRulesToAdd.IpBlockRules {
-			found := false
-			for _, currentRule := range s.IPRules.IPBlockRules {
-				if currentRule.CIDR == newRule.Cidr {
-					found = true
-				}
-			}
-			if !found {
-				ipBlockRules = append(ipBlockRules, newRule)
-			}
-		}
+		allow = append(block, addIPs(p.Block, putProtectionReq.IpRulesToAdd.Allow)...)
+		block = append(block, addIPs(p.Block, putProtectionReq.IpRulesToAdd.Block)...)
+
 	}
-	s.IPRules.FromProto(&wv1.IPRules{IpBlockRules: ipBlockRules})
-
-	// if IPRules was set by the request
-	//if putProtectionReq.IpRulesToAdd != nil {
-	//	// if current protection has no IPRules, set it
-	//	if s.IPRules == nil {
-	//		s.IPRules = &IPRules{IPBlockRules: putProtectionReq.IpRulesToAdd.IPBlockRules}
-	//		// fully overwrite ip block rules in case they were fully empty
-	//	} else if len(newDesiredState.IPRules.IPBlockRules) == 0 {
-	//		s.IPRules.IPBlockRules = newDesiredState.IPRules.IPBlockRules
-	//	} else {
-	//		// the ip block rules already present, make sure we've no duplicates
-	//		for _, newIpBlockRule := range newDesiredState.IPRules.IPBlockRules {
-	//			newIpRuleFound := false
-	//			for _, ipBlockRule := range s.IPRules.IPBlockRules {
-	//				if newIpBlockRule == ipBlockRule {
-	//					newIpRuleFound = true
-	//				}
-	//			}
-	//			if !newIpRuleFound {
-	//				s.IPRules.IPBlockRules = append(s.IPRules.IPBlockRules, newIpBlockRule)
-	//			}
-	//		}
-	//	}
-	//}
-
-	//s.IPRules.FromProto(putProtectionReq.IpRulesToAdd)
+	p.FromProto(&wv1.IPRules{Allow: allow, Block: block})
 }
 
 func (p *IPRules) Validate() error {
-	for _, rule := range p.IPBlockRules {
+	for _, rule := range p.Block {
 		if rule.CIDR == "" {
 			return fmt.Errorf("CIDR cannot be empty")
 		}
@@ -187,20 +150,47 @@ func (p *IPRules) Validate() error {
 	return nil
 }
 
+func (p *IPRules) FromProto(ipRules *wv1.IPRules) {
+	// allowed IPs
+	p.Allow = make([]IP, len(ipRules.Allow))
+	for i, ip := range ipRules.Allow {
+		p.Allow[i] = IP{CIDR: ip.Cidr}
+	}
+	// blocked IPs
+	p.Block = make([]IP, len(ipRules.Block))
+	for i, ip := range ipRules.Block {
+		p.Block[i] = IP{CIDR: ip.Cidr}
+	}
+}
+
 func (f *Waf) FromProto(v1desiredState *wv1.Waf) {
 	f.ParanoiaLevel = uint32(v1desiredState.ParanoiaLevel)
 	f.Mode = uint32(v1desiredState.ProtectionMode)
 }
 
-func (p *IPRules) FromProto(ipRules *wv1.IPRules) {
-	p.IPBlockRules = make([]IPBlockRule, len(ipRules.IpBlockRules))
-	for i, ipBlockRule := range ipRules.IpBlockRules {
-		p.IPBlockRules[i] = IPBlockRule{CIDR: ipBlockRule.Cidr}
-	}
-}
-
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
-	return nil
+	state := &wv1.ProtectionDesiredState{}
+	if s.Waf != nil {
+		state.Waf = &wv1.Waf{
+			ProtectionMode: wv1.ProtectionMode(s.Waf.Mode),
+			ParanoiaLevel:  wv1.ParanoiaLevel(s.Waf.ParanoiaLevel),
+		}
+	}
+	if s.XffNumTrustedHops != nil {
+		state.XffNumTrustedHops = s.XffNumTrustedHops
+	}
+	if s.IPRules != nil {
+		var block = make([]*wv1.IP, len(s.IPRules.Block))
+		for idx, ip := range s.IPRules.Block {
+			block[idx] = &wv1.IP{Cidr: ip.CIDR}
+		}
+		var allow = make([]*wv1.IP, len(s.IPRules.Allow))
+		for idx, ip := range s.IPRules.Block {
+			allow[idx] = &wv1.IP{Cidr: ip.CIDR}
+		}
+		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
+	}
+	return state
 }
 
 func (p *Protection) FromProto(protectionv1 *wv1.Protection) error {
@@ -218,26 +208,7 @@ func (p *Protection) ToProto() *wv1.Protection {
 		Id:             uint32(p.ID),
 		ApplicationId:  uint32(p.ApplicationID),
 		ProtectionMode: wv1.ProtectionMode(p.Mode),
-		DesiredState:   &wv1.ProtectionDesiredState{},
-	}
-
-	if p.DesiredState.Waf != nil {
-		protection.DesiredState.Waf = &wv1.Waf{
-			ProtectionMode: wv1.ProtectionMode(p.DesiredState.Waf.Mode),
-			ParanoiaLevel:  wv1.ParanoiaLevel(p.DesiredState.Waf.ParanoiaLevel),
-		}
-	}
-
-	if p.DesiredState.XffNumTrustedHops != nil {
-		protection.DesiredState.XffNumTrustedHops = p.DesiredState.XffNumTrustedHops
-	}
-
-	if p.DesiredState.IPRules != nil {
-		var ipBlockRules = make([]*wv1.IPBlockRule, len(p.DesiredState.IPRules.IPBlockRules))
-		for idx, ipBlockRule := range p.DesiredState.IPRules.IPBlockRules {
-			ipBlockRules[idx] = &wv1.IPBlockRule{Cidr: ipBlockRule.CIDR}
-		}
-		protection.DesiredState.IpRules = &wv1.IPRules{IpBlockRules: ipBlockRules}
+		DesiredState:   p.DesiredState.ToProto(),
 	}
 
 	if p.Application.ID != 0 {
@@ -380,4 +351,36 @@ func (s *ProtectionRepository) ListProtections(options *wv1.ListProtectionsOptio
 
 func (s *ProtectionRepository) DeleteProtection(protectionId uint32) error {
 	return s.db.Delete(&Protection{ID: uint(protectionId)}).Error
+}
+
+// addIPs add IPs without duplications
+func addIPs(current []IP, fromReq []*wv1.IP) (resultIps []*wv1.IP) {
+	for _, reqIP := range fromReq {
+		found := false
+		for _, currentIP := range current {
+			if currentIP.CIDR == reqIP.Cidr {
+				found = true
+			}
+		}
+		if !found {
+			resultIps = append(resultIps, reqIP)
+		}
+	}
+	return
+}
+
+// removeIPs remove ips
+func removeIPs(current []IP, fromReq []*wv1.IP) (resultIps []*wv1.IP) {
+	for _, currentIP := range current {
+		found := false
+		for _, fromReqIp := range fromReq {
+			if currentIP.CIDR == fromReqIp.Cidr {
+				found = true
+			}
+		}
+		if !found {
+			resultIps = append(resultIps, &wv1.IP{Cidr: currentIP.CIDR})
+		}
+	}
+	return resultIps
 }

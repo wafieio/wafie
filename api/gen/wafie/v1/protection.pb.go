@@ -177,27 +177,27 @@ func (GetProtectionOptionsIncludeCrsRules) EnumDescriptor() ([]byte, []int) {
 	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{2}
 }
 
-type IPBlockRule struct {
+type IP struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cidr          string                 `protobuf:"bytes,1,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *IPBlockRule) Reset() {
-	*x = IPBlockRule{}
+func (x *IP) Reset() {
+	*x = IP{}
 	mi := &file_wafie_v1_protection_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *IPBlockRule) String() string {
+func (x *IP) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IPBlockRule) ProtoMessage() {}
+func (*IP) ProtoMessage() {}
 
-func (x *IPBlockRule) ProtoReflect() protoreflect.Message {
+func (x *IP) ProtoReflect() protoreflect.Message {
 	mi := &file_wafie_v1_protection_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -209,12 +209,12 @@ func (x *IPBlockRule) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IPBlockRule.ProtoReflect.Descriptor instead.
-func (*IPBlockRule) Descriptor() ([]byte, []int) {
+// Deprecated: Use IP.ProtoReflect.Descriptor instead.
+func (*IP) Descriptor() ([]byte, []int) {
 	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IPBlockRule) GetCidr() string {
+func (x *IP) GetCidr() string {
 	if x != nil {
 		return x.Cidr
 	}
@@ -223,7 +223,8 @@ func (x *IPBlockRule) GetCidr() string {
 
 type IPRules struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	IpBlockRules  []*IPBlockRule         `protobuf:"bytes,1,rep,name=ip_block_rules,json=ipBlockRules,proto3" json:"ip_block_rules,omitempty"`
+	Block         []*IP                  `protobuf:"bytes,1,rep,name=block,proto3" json:"block,omitempty"`
+	Allow         []*IP                  `protobuf:"bytes,2,rep,name=allow,proto3" json:"allow,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,9 +259,16 @@ func (*IPRules) Descriptor() ([]byte, []int) {
 	return file_wafie_v1_protection_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *IPRules) GetIpBlockRules() []*IPBlockRule {
+func (x *IPRules) GetBlock() []*IP {
 	if x != nil {
-		return x.IpBlockRules
+		return x.Block
+	}
+	return nil
+}
+
+func (x *IPRules) GetAllow() []*IP {
+	if x != nil {
+		return x.Allow
 	}
 	return nil
 }
@@ -1073,11 +1081,12 @@ var File_wafie_v1_protection_proto protoreflect.FileDescriptor
 
 const file_wafie_v1_protection_proto_rawDesc = "" +
 	"\n" +
-	"\x19wafie/v1/protection.proto\x12\bwafie.v1\x1a\x1awafie/v1/application.proto\x1a\x12wafie/v1/crs.proto\"!\n" +
-	"\vIPBlockRule\x12\x12\n" +
-	"\x04cidr\x18\x01 \x01(\tR\x04cidr\"F\n" +
-	"\aIPRules\x12;\n" +
-	"\x0eip_block_rules\x18\x01 \x03(\v2\x15.wafie.v1.IPBlockRuleR\fipBlockRules\"\x88\x01\n" +
+	"\x19wafie/v1/protection.proto\x12\bwafie.v1\x1a\x1awafie/v1/application.proto\x1a\x12wafie/v1/crs.proto\"\x18\n" +
+	"\x02IP\x12\x12\n" +
+	"\x04cidr\x18\x01 \x01(\tR\x04cidr\"Q\n" +
+	"\aIPRules\x12\"\n" +
+	"\x05block\x18\x01 \x03(\v2\f.wafie.v1.IPR\x05block\x12\"\n" +
+	"\x05allow\x18\x02 \x03(\v2\f.wafie.v1.IPR\x05allow\"\x88\x01\n" +
 	"\x03Waf\x12A\n" +
 	"\x0fprotection_mode\x18\x01 \x01(\x0e2\x18.wafie.v1.ProtectionModeR\x0eprotectionMode\x12>\n" +
 	"\x0eparanoia_level\x18\x02 \x01(\x0e2\x17.wafie.v1.ParanoiaLevelR\rparanoiaLevel\"\xd5\x01\n" +
@@ -1191,7 +1200,7 @@ var file_wafie_v1_protection_proto_goTypes = []any{
 	(ParanoiaLevel)(0),                       // 0: wafie.v1.ParanoiaLevel
 	(ProtectionMode)(0),                      // 1: wafie.v1.ProtectionMode
 	(GetProtectionOptionsIncludeCrsRules)(0), // 2: wafie.v1.GetProtectionOptionsIncludeCrsRules
-	(*IPBlockRule)(nil),                      // 3: wafie.v1.IPBlockRule
+	(*IP)(nil),                               // 3: wafie.v1.IP
 	(*IPRules)(nil),                          // 4: wafie.v1.IPRules
 	(*Waf)(nil),                              // 5: wafie.v1.Waf
 	(*ProtectionDesiredState)(nil),           // 6: wafie.v1.ProtectionDesiredState
@@ -1212,45 +1221,46 @@ var file_wafie_v1_protection_proto_goTypes = []any{
 	(*CrsVersion)(nil),                       // 21: wafie.v1.CrsVersion
 }
 var file_wafie_v1_protection_proto_depIdxs = []int32{
-	3,  // 0: wafie.v1.IPRules.ip_block_rules:type_name -> wafie.v1.IPBlockRule
-	1,  // 1: wafie.v1.Waf.protection_mode:type_name -> wafie.v1.ProtectionMode
-	0,  // 2: wafie.v1.Waf.paranoia_level:type_name -> wafie.v1.ParanoiaLevel
-	5,  // 3: wafie.v1.ProtectionDesiredState.waf:type_name -> wafie.v1.Waf
-	4,  // 4: wafie.v1.ProtectionDesiredState.ip_rules:type_name -> wafie.v1.IPRules
-	20, // 5: wafie.v1.Protection.application:type_name -> wafie.v1.Application
-	1,  // 6: wafie.v1.Protection.protection_mode:type_name -> wafie.v1.ProtectionMode
-	6,  // 7: wafie.v1.Protection.desired_state:type_name -> wafie.v1.ProtectionDesiredState
-	21, // 8: wafie.v1.Protection.crs_versions:type_name -> wafie.v1.CrsVersion
-	1,  // 9: wafie.v1.CreateProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
-	6,  // 10: wafie.v1.CreateProtectionRequest.desired_state:type_name -> wafie.v1.ProtectionDesiredState
-	7,  // 11: wafie.v1.CreateProtectionResponse.protection:type_name -> wafie.v1.Protection
-	2,  // 12: wafie.v1.GetProtectionOptions.include_crs_rules:type_name -> wafie.v1.GetProtectionOptionsIncludeCrsRules
-	10, // 13: wafie.v1.GetProtectionRequest.options:type_name -> wafie.v1.GetProtectionOptions
-	7,  // 14: wafie.v1.GetProtectionResponse.protection:type_name -> wafie.v1.Protection
-	1,  // 15: wafie.v1.PutProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
-	5,  // 16: wafie.v1.PutProtectionRequest.waf:type_name -> wafie.v1.Waf
-	4,  // 17: wafie.v1.PutProtectionRequest.ip_rules_to_add:type_name -> wafie.v1.IPRules
-	4,  // 18: wafie.v1.PutProtectionRequest.ip_rules_to_remove:type_name -> wafie.v1.IPRules
-	7,  // 19: wafie.v1.PutProtectionResponse.protection:type_name -> wafie.v1.Protection
-	1,  // 20: wafie.v1.ListProtectionsOptions.protection_mode:type_name -> wafie.v1.ProtectionMode
-	1,  // 21: wafie.v1.ListProtectionsOptions.mod_sec_mode:type_name -> wafie.v1.ProtectionMode
-	15, // 22: wafie.v1.ListProtectionsRequest.options:type_name -> wafie.v1.ListProtectionsOptions
-	7,  // 23: wafie.v1.ListProtectionsResponse.protections:type_name -> wafie.v1.Protection
-	8,  // 24: wafie.v1.ProtectionService.CreateProtection:input_type -> wafie.v1.CreateProtectionRequest
-	11, // 25: wafie.v1.ProtectionService.GetProtection:input_type -> wafie.v1.GetProtectionRequest
-	16, // 26: wafie.v1.ProtectionService.ListProtections:input_type -> wafie.v1.ListProtectionsRequest
-	13, // 27: wafie.v1.ProtectionService.PutProtection:input_type -> wafie.v1.PutProtectionRequest
-	18, // 28: wafie.v1.ProtectionService.DeleteProtection:input_type -> wafie.v1.DeleteProtectionRequest
-	9,  // 29: wafie.v1.ProtectionService.CreateProtection:output_type -> wafie.v1.CreateProtectionResponse
-	12, // 30: wafie.v1.ProtectionService.GetProtection:output_type -> wafie.v1.GetProtectionResponse
-	17, // 31: wafie.v1.ProtectionService.ListProtections:output_type -> wafie.v1.ListProtectionsResponse
-	14, // 32: wafie.v1.ProtectionService.PutProtection:output_type -> wafie.v1.PutProtectionResponse
-	19, // 33: wafie.v1.ProtectionService.DeleteProtection:output_type -> wafie.v1.DeleteProtectionResponse
-	29, // [29:34] is the sub-list for method output_type
-	24, // [24:29] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	3,  // 0: wafie.v1.IPRules.block:type_name -> wafie.v1.IP
+	3,  // 1: wafie.v1.IPRules.allow:type_name -> wafie.v1.IP
+	1,  // 2: wafie.v1.Waf.protection_mode:type_name -> wafie.v1.ProtectionMode
+	0,  // 3: wafie.v1.Waf.paranoia_level:type_name -> wafie.v1.ParanoiaLevel
+	5,  // 4: wafie.v1.ProtectionDesiredState.waf:type_name -> wafie.v1.Waf
+	4,  // 5: wafie.v1.ProtectionDesiredState.ip_rules:type_name -> wafie.v1.IPRules
+	20, // 6: wafie.v1.Protection.application:type_name -> wafie.v1.Application
+	1,  // 7: wafie.v1.Protection.protection_mode:type_name -> wafie.v1.ProtectionMode
+	6,  // 8: wafie.v1.Protection.desired_state:type_name -> wafie.v1.ProtectionDesiredState
+	21, // 9: wafie.v1.Protection.crs_versions:type_name -> wafie.v1.CrsVersion
+	1,  // 10: wafie.v1.CreateProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
+	6,  // 11: wafie.v1.CreateProtectionRequest.desired_state:type_name -> wafie.v1.ProtectionDesiredState
+	7,  // 12: wafie.v1.CreateProtectionResponse.protection:type_name -> wafie.v1.Protection
+	2,  // 13: wafie.v1.GetProtectionOptions.include_crs_rules:type_name -> wafie.v1.GetProtectionOptionsIncludeCrsRules
+	10, // 14: wafie.v1.GetProtectionRequest.options:type_name -> wafie.v1.GetProtectionOptions
+	7,  // 15: wafie.v1.GetProtectionResponse.protection:type_name -> wafie.v1.Protection
+	1,  // 16: wafie.v1.PutProtectionRequest.protection_mode:type_name -> wafie.v1.ProtectionMode
+	5,  // 17: wafie.v1.PutProtectionRequest.waf:type_name -> wafie.v1.Waf
+	4,  // 18: wafie.v1.PutProtectionRequest.ip_rules_to_add:type_name -> wafie.v1.IPRules
+	4,  // 19: wafie.v1.PutProtectionRequest.ip_rules_to_remove:type_name -> wafie.v1.IPRules
+	7,  // 20: wafie.v1.PutProtectionResponse.protection:type_name -> wafie.v1.Protection
+	1,  // 21: wafie.v1.ListProtectionsOptions.protection_mode:type_name -> wafie.v1.ProtectionMode
+	1,  // 22: wafie.v1.ListProtectionsOptions.mod_sec_mode:type_name -> wafie.v1.ProtectionMode
+	15, // 23: wafie.v1.ListProtectionsRequest.options:type_name -> wafie.v1.ListProtectionsOptions
+	7,  // 24: wafie.v1.ListProtectionsResponse.protections:type_name -> wafie.v1.Protection
+	8,  // 25: wafie.v1.ProtectionService.CreateProtection:input_type -> wafie.v1.CreateProtectionRequest
+	11, // 26: wafie.v1.ProtectionService.GetProtection:input_type -> wafie.v1.GetProtectionRequest
+	16, // 27: wafie.v1.ProtectionService.ListProtections:input_type -> wafie.v1.ListProtectionsRequest
+	13, // 28: wafie.v1.ProtectionService.PutProtection:input_type -> wafie.v1.PutProtectionRequest
+	18, // 29: wafie.v1.ProtectionService.DeleteProtection:input_type -> wafie.v1.DeleteProtectionRequest
+	9,  // 30: wafie.v1.ProtectionService.CreateProtection:output_type -> wafie.v1.CreateProtectionResponse
+	12, // 31: wafie.v1.ProtectionService.GetProtection:output_type -> wafie.v1.GetProtectionResponse
+	17, // 32: wafie.v1.ProtectionService.ListProtections:output_type -> wafie.v1.ListProtectionsResponse
+	14, // 33: wafie.v1.ProtectionService.PutProtection:output_type -> wafie.v1.PutProtectionResponse
+	19, // 34: wafie.v1.ProtectionService.DeleteProtection:output_type -> wafie.v1.DeleteProtectionResponse
+	30, // [30:35] is the sub-list for method output_type
+	25, // [25:30] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_wafie_v1_protection_proto_init() }

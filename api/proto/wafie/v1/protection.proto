@@ -27,12 +27,13 @@ enum GetProtectionOptionsIncludeCrsRules{
   GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_NONE = 3;
 }
 
-message IPBlockRule {
+message IP {
   string cidr = 1;
 }
 
 message IPRules {
-  repeated IPBlockRule ip_block_rules = 1;
+  repeated IP block = 1;
+  repeated IP allow = 2;
 }
 
 message Waf {
