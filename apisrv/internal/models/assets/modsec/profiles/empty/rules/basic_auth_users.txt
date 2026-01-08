@@ -1,0 +1,3 @@
+{{{range $index, $u := .Auth.BasicAuth.Users}}}
+Basic {{{ printf "%s:%s" $u.User $u.Pass | b64enc }}}
+{{{end}}}

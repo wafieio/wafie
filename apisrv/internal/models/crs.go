@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/wafieio/wafie/apisrv/pkg/seclang"
 	"io"
 	"regexp"
@@ -177,6 +178,9 @@ func (r *CRSRepository) ProtectionDesiredState(crsVersionId uint) (*ProtectionDe
 	if p.DesiredState.IPRules == nil {
 		p.DesiredState.IPRules = &IPRules{}
 	}
+	if p.DesiredState.Auth == nil {
+		p.DesiredState.Auth = &Auth{BasicAuth: &BasicAuth{}}
+	}
 	//err := ruleSet.Render(&p.DesiredState)
 	return &p.DesiredState, nil
 }
@@ -241,6 +245,7 @@ func (s *CrsRuleSet) ToProto(data *ProtectionDesiredState) *wv1.CrsRuleSet {
 func (s *CrsRuleSet) Render(data *ProtectionDesiredState) (renderedCrsRules string, err error) {
 
 	tmpl, err := template.New(s.CrsFileName).
+		Funcs(sprig.FuncMap()).
 		Delims("{{{", "}}}").
 		Parse(s.CrsFileContent)
 	if err != nil {
