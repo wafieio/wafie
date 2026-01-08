@@ -69,7 +69,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		// Request Headers Evaluation
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
-			// get proteciotn ID
+			// get protection ID
 			protectionId := s.getProtectionId(r.RequestHeaders.Headers.Headers)
 			if protectionId == 0 {
 				s.logger.Warn("protection id is undefined")

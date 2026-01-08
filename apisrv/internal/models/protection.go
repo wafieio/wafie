@@ -33,10 +33,26 @@ type IPRules struct {
 	Block []IP `json:"block"`
 	Allow []IP `json:"allow"`
 }
+
+type BasicAuthUser struct {
+	User string `json:"user"`
+	Pass string `json:"pass"`
+}
+
+type BasicAuth struct {
+	Users          []BasicAuthUser `json:"users"`
+	Enabled        bool            `json:"enabled"`
+	PathRegExMatch string          `json:"pathRegEx"`
+}
+
+type Auth struct {
+	BasicAuth *BasicAuth `json:"basicAuth"`
+}
 type ProtectionDesiredState struct {
 	Waf               *Waf     `json:"waf"`
 	XffNumTrustedHops *uint32  `json:"xffNumTrustedHops"`
 	IPRules           *IPRules `json:"ipRules"`
+	Auth              *Auth    `json:"auth"`
 }
 
 type Protection struct {
@@ -99,24 +115,83 @@ func (s *ProtectionDesiredState) FromProto(v1desiredState *wv1.ProtectionDesired
 	}
 }
 
-func (s *ProtectionDesiredState) Merge(putProtectionReq *wv1.PutProtectionRequest) {
+func (s *ProtectionDesiredState) Merge(req *wv1.PutProtectionRequest) {
 	// nothing to merge if new desired state is nil
-	if putProtectionReq == nil {
+	if req == nil {
 		return
 	}
 	// if new desired state waf is not nil, fully overwrite the Waf object
-	if putProtectionReq.Waf != nil {
-		s.Waf.FromProto(putProtectionReq.Waf)
+	if req.Waf != nil {
+		s.Waf.FromProto(req.Waf)
 	}
 	// if XffNumTrustedHops set by request fully overwrite it
-	if putProtectionReq.XffNumTrustedHops != nil {
-		s.XffNumTrustedHops = putProtectionReq.XffNumTrustedHops
+	if req.XffNumTrustedHops != nil {
+		s.XffNumTrustedHops = req.XffNumTrustedHops
 	}
 	// if current IP Rules is empty, just set it accordingly to request
 	if s.IPRules == nil {
 		s.IPRules = &IPRules{}
 	}
-	s.IPRules.Merge(putProtectionReq)
+	s.IPRules.Merge(req)
+	// if Auth not null
+	if req.BasicAuth != nil {
+		if s.Auth == nil {
+			s.Auth = &Auth{BasicAuth: &BasicAuth{}}
+		}
+		s.Auth.BasicAuth.Merge(req.BasicAuth)
+	}
+}
+
+func (ba *BasicAuth) Merge(reqBasicAuth *wv1.BasicAuthPutRequest) {
+	// if set by request, set enabled
+	if reqBasicAuth.Enabled != nil {
+		ba.Enabled = *reqBasicAuth.Enabled
+	}
+	// if set by request, set path regex match
+	if reqBasicAuth.PathRegExMatch != nil {
+		ba.PathRegExMatch = *reqBasicAuth.PathRegExMatch
+	}
+	var basicAuthUsers []BasicAuthUser
+	// remove users
+	if len(reqBasicAuth.UsersToRemove) > 0 {
+		for _, userToRemove := range reqBasicAuth.UsersToRemove {
+			remove := false
+			for _, currentUser := range ba.Users {
+				if currentUser.User == userToRemove.User {
+					remove = true
+				}
+			}
+			// leave only users that should not be removed
+			if !remove {
+				basicAuthUsers = append(basicAuthUsers, BasicAuthUser{})
+			}
+		}
+	} else {
+		// if no users to remove, copy all existing users
+		for _, currentUser := range ba.Users {
+			basicAuthUsers = append(basicAuthUsers,
+				BasicAuthUser{User: currentUser.User, Pass: currentUser.Pass})
+		}
+	}
+	if len(reqBasicAuth.UsersToAdd) > 0 {
+		for _, userToAdd := range reqBasicAuth.UsersToAdd {
+			found := false
+			for idx, currentUser := range basicAuthUsers {
+				// if user exists in the current users, do not add it
+				if currentUser.User == userToAdd.User {
+					// do not duplicate the user,
+					// but do update the password
+					basicAuthUsers[idx].Pass = userToAdd.Pass
+					found = true
+				}
+			}
+			if !found {
+				basicAuthUsers = append(basicAuthUsers,
+					BasicAuthUser{User: userToAdd.User, Pass: userToAdd.Pass})
+			}
+		}
+	}
+	ba.Users = basicAuthUsers
 }
 
 func (p *IPRules) Merge(putProtectionReq *wv1.PutProtectionRequest) {
@@ -191,6 +266,19 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 			allow[idx] = &wv1.IP{Cidr: ip.CIDR}
 		}
 		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
+	}
+	if s.Auth != nil && s.Auth.BasicAuth != nil {
+		basicAuthUser := make([]*wv1.BasicAuthUser, len(s.Auth.BasicAuth.Users))
+		for idx, user := range s.Auth.BasicAuth.Users {
+			basicAuthUser[idx] = &wv1.BasicAuthUser{User: user.User, Pass: user.Pass}
+		}
+		state.Auth = &wv1.Auth{
+			BasicAuth: &wv1.BasicAuth{
+				Users:          basicAuthUser,
+				PathRegExMatch: &s.Auth.BasicAuth.PathRegExMatch,
+				Enabled:        &s.Auth.BasicAuth.Enabled,
+			},
+		}
 	}
 	return state
 }
