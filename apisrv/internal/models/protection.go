@@ -40,9 +40,9 @@ type BasicAuthUser struct {
 }
 
 type BasicAuth struct {
-	Users          []BasicAuthUser `json:"users"`
-	Enabled        bool            `json:"enabled"`
-	PathRegExMatch string          `json:"pathRegEx"`
+	Users         []BasicAuthUser `json:"users"`
+	Enabled       bool            `json:"enabled"`
+	PathWhitelist []string        `json:"pathWhitelist"`
 }
 
 type Auth struct {
@@ -147,51 +147,58 @@ func (ba *BasicAuth) Merge(reqBasicAuth *wv1.BasicAuthPutRequest) {
 	if reqBasicAuth.Enabled != nil {
 		ba.Enabled = *reqBasicAuth.Enabled
 	}
-	// if set by request, set path regex match
-	if reqBasicAuth.PathRegExMatch != nil {
-		ba.PathRegExMatch = *reqBasicAuth.PathRegExMatch
+	// find all indexes for removal
+	var removeAt []int
+	for idx, currentPath := range ba.PathWhitelist {
+		for _, pathToRemove := range reqBasicAuth.PathWhitelistToRemove {
+			if currentPath == pathToRemove {
+				removeAt = append(removeAt, idx)
+				continue
+			}
+		}
 	}
-	var basicAuthUsers []BasicAuthUser
+	// remove paths whitelists
+	for _, removeIdx := range removeAt {
+		ba.PathWhitelist = append(ba.PathWhitelist[:removeIdx], ba.PathWhitelist[removeIdx+1:]...)
+	}
+	// add new paths whitelists
+	for _, newPathWhitelist := range reqBasicAuth.PathWhitelistToAdd {
+		found := false
+		for _, currentPath := range ba.PathWhitelist {
+			if newPathWhitelist == currentPath {
+				found = true
+			}
+		}
+		if !found {
+			ba.PathWhitelist = append(ba.PathWhitelist, newPathWhitelist)
+		}
+	}
 	// remove users
-	if len(reqBasicAuth.UsersToRemove) > 0 {
+	removeAt = []int{}
+	for idx, currentUser := range ba.Users {
 		for _, userToRemove := range reqBasicAuth.UsersToRemove {
-			remove := false
-			for _, currentUser := range ba.Users {
-				if currentUser.User == userToRemove.User {
-					remove = true
-				}
-			}
-			// leave only users that should not be removed
-			if !remove {
-				basicAuthUsers = append(basicAuthUsers, BasicAuthUser{})
+			if currentUser.User == userToRemove.User {
+				removeAt = append(removeAt, idx)
 			}
 		}
-	} else {
-		// if no users to remove, copy all existing users
+	}
+	for _, removeIdx := range removeAt {
+		ba.Users = append(ba.Users[:removeIdx], ba.Users[removeIdx+1:]...)
+	}
+	// add users
+	for _, userToAdd := range reqBasicAuth.UsersToAdd {
+		found := false
 		for _, currentUser := range ba.Users {
-			basicAuthUsers = append(basicAuthUsers,
-				BasicAuthUser{User: currentUser.User, Pass: currentUser.Pass})
-		}
-	}
-	if len(reqBasicAuth.UsersToAdd) > 0 {
-		for _, userToAdd := range reqBasicAuth.UsersToAdd {
-			found := false
-			for idx, currentUser := range basicAuthUsers {
-				// if user exists in the current users, do not add it
-				if currentUser.User == userToAdd.User {
-					// do not duplicate the user,
-					// but do update the password
-					basicAuthUsers[idx].Pass = userToAdd.Pass
-					found = true
-				}
-			}
-			if !found {
-				basicAuthUsers = append(basicAuthUsers,
-					BasicAuthUser{User: userToAdd.User, Pass: userToAdd.Pass})
+			if currentUser.User == userToAdd.User {
+				// do not duplicate the user, but do update the password
+				found = true
+				currentUser.Pass = userToAdd.Pass
 			}
 		}
+		if !found {
+			ba.Users = append(ba.Users, BasicAuthUser{User: userToAdd.User, Pass: userToAdd.Pass})
+		}
 	}
-	ba.Users = basicAuthUsers
 }
 
 func (p *IPRules) Merge(putProtectionReq *wv1.PutProtectionRequest) {
@@ -274,9 +281,9 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 		}
 		state.Auth = &wv1.Auth{
 			BasicAuth: &wv1.BasicAuth{
-				Users:          basicAuthUser,
-				PathRegExMatch: &s.Auth.BasicAuth.PathRegExMatch,
-				Enabled:        &s.Auth.BasicAuth.Enabled,
+				Users:         basicAuthUser,
+				PathWhitelist: s.Auth.BasicAuth.PathWhitelist,
+				Enabled:       &s.Auth.BasicAuth.Enabled,
 			},
 		}
 	}

@@ -27,6 +27,9 @@ func ParseRule(ruleText string) (*SecRule, error) {
 	// Clean up the rule text
 	ruleText = strings.TrimSpace(ruleText)
 
+	// Handle line continuations - remove backslash followed by newline/whitespace
+	ruleText = cleanLineContinations(ruleText)
+
 	// Remove "SecRule" prefix if present
 	if strings.HasPrefix(ruleText, "SecRule") {
 		ruleText = strings.TrimSpace(ruleText[7:])
@@ -298,6 +301,37 @@ func splitActions(actionsStr string) []string {
 	}
 
 	return parts
+}
+
+// cleanLineContinations removes line continuation characters (backslash followed by newline/whitespace)
+func cleanLineContinations(ruleText string) string {
+	// Split by lines and process each line
+	lines := strings.Split(ruleText, "\n")
+	var cleanedLines []string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// If line ends with backslash, it's a continuation
+		if strings.HasSuffix(line, "\\") {
+			// Remove the backslash and add space for proper separation
+			line = strings.TrimSuffix(line, "\\")
+			line = strings.TrimSpace(line)
+
+			// Only add non-empty lines
+			if line != "" {
+				cleanedLines = append(cleanedLines, line)
+			}
+		} else {
+			// Regular line, add it
+			if line != "" {
+				cleanedLines = append(cleanedLines, line)
+			}
+		}
+	}
+
+	// Join all lines with space
+	return strings.Join(cleanedLines, " ")
 }
 
 // ValidateRule validates a parsed SecRule for completeness and correctness

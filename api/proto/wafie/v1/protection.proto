@@ -35,13 +35,14 @@ message BasicAuthUser {
 message BasicAuthPutRequest {
   repeated BasicAuthUser users_to_add = 1;
   repeated BasicAuthUser users_to_remove = 2;
-  optional string path_reg_ex_match = 3;
-  optional bool enabled = 4;
+  repeated string path_whitelist_to_add = 3;
+  repeated string path_whitelist_to_remove = 4;
+  optional bool enabled = 5;
 }
 
 message BasicAuth {
   repeated BasicAuthUser users = 1;
-  optional string path_reg_ex_match = 3;
+  repeated string path_whitelist = 3;
   optional bool enabled = 4;
 }
 

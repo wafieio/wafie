@@ -849,6 +849,59 @@ func TestToModSecurityRule(t *testing.T) {
 	}
 }
 
+func TestParseMultilineRule(t *testing.T) {
+	// Test case for the specific bug that was reported
+	multilineRule := `SecRule REQUEST_URI ".*" \
+    "id:99999, \
+    phase:1, \
+    pass, \
+    nolog, \
+    msg:'DEBUG: The current REQUEST_URI is: %{REQUEST_URI}'"`
+
+	parsed, err := ParseRule(multilineRule)
+	if err != nil {
+		t.Fatalf("Failed to parse multiline rule: %v", err)
+	}
+
+	// Verify all actions were parsed correctly
+	expectedActions := []Action{
+		{Name: "id", Parameter: "99999"},
+		{Name: "phase", Parameter: "1"},
+		{Name: "pass"},
+		{Name: "nolog"},
+		{Name: "msg", Parameter: "DEBUG: The current REQUEST_URI is: %{REQUEST_URI}"},
+	}
+
+	if len(parsed.Actions) != len(expectedActions) {
+		t.Errorf("Expected %d actions, got %d", len(expectedActions), len(parsed.Actions))
+	}
+
+	for i, expectedAction := range expectedActions {
+		if i >= len(parsed.Actions) {
+			t.Errorf("Missing action %d: %+v", i, expectedAction)
+			continue
+		}
+		actualAction := parsed.Actions[i]
+		if actualAction.Name != expectedAction.Name || actualAction.Parameter != expectedAction.Parameter {
+			t.Errorf("Action %d mismatch: expected %+v, got %+v", i, expectedAction, actualAction)
+		}
+	}
+
+	// Test round-trip conversion
+	modSecRule := parsed.ToModSecurityRule()
+
+	// Parse the generated rule again
+	reparsed, err := ParseRule(modSecRule)
+	if err != nil {
+		t.Fatalf("Failed to parse regenerated rule: %v", err)
+	}
+
+	// Verify all actions are preserved
+	if len(reparsed.Actions) != len(expectedActions) {
+		t.Errorf("Round-trip failed: expected %d actions, got %d", len(expectedActions), len(reparsed.Actions))
+	}
+}
+
 func TestRoundTripParsing(t *testing.T) {
 	// Test that parsing a rule and then converting it back produces equivalent rule
 	testCases := []string{
