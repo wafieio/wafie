@@ -12,10 +12,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -26,6 +30,12 @@ import (
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	wv1c "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
+)
+
+const (
+	InterventionContextKey                = "sys?"
+	InterventionContextKeyBasicAuthHeader = "basicAuthHeader"
+	InterventionContextKeyStatus          = "status"
 )
 
 type EvalRequest C.WafieEvaluationRequest
@@ -396,31 +406,35 @@ func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
 	return false
 }
 
-func (s *ModeSec) InterventionContext(evalRequest *EvalRequest) []*corev3.HeaderValueOption {
-	var headers []*corev3.HeaderValueOption
+func (s *ModeSec) EnrichWithInterventionContext(evalRequest *EvalRequest, response *extproc.ImmediateResponse) {
 	var interventionURL string
 	if evalRequest.intervention_url == nil {
-		return nil
+		return
 	}
 	interventionURL = C.GoString(evalRequest.intervention_url)
-	// add header to response
-	// redirect:'ah>WWW-Authenticate:Basic realm=\"Restricted Area\"', \
-	if strings.HasPrefix(interventionURL, "ah>") {
-		header := strings.Split(strings.ReplaceAll(interventionURL, "ah>", ""), ":")
-		if len(header) < 1 {
-			s.logger.Error("wrong add heder context", zap.String("intervention_url", interventionURL))
-			return nil
+	// example -> redirect:'sys?basicAuthHeader=true&status=401', \
+	if strings.HasPrefix(interventionURL, InterventionContextKey) {
+		params, err := url.ParseQuery(strings.ReplaceAll(interventionURL, InterventionContextKey, ""))
+		if err != nil {
+			s.logger.Error("error parsing intervention url", zap.Error(err))
+			return
 		}
-
-		headers = append(headers, &corev3.HeaderValueOption{
-			Header: &corev3.HeaderValue{
-				Key:      header[0],
-				RawValue: []byte(header[1]),
-			},
-		})
+		if params.Get(InterventionContextKeyBasicAuthHeader) != "" {
+			response.Headers.SetHeaders = append(response.Headers.SetHeaders, &corev3.HeaderValueOption{
+				Header: &corev3.HeaderValue{
+					Key:      "WWW-Authenticate",
+					RawValue: []byte("Basic realm=\"Restricted Area\""),
+				},
+			})
+		}
+		if status := params.Get(InterventionContextKeyStatus); status != "" {
+			i, err := strconv.Atoi(status)
+			if err != nil {
+				s.logger.Error("error parsing intervention status", zap.Error(err))
+			}
+			response.Status = &typev3.HttpStatus{Code: typev3.StatusCode(i)}
+		}
 	}
-
-	return headers
 }
 
 func (s *ModeSec) EvaluateBody(evalRequest *EvalRequest) (intervened bool) {

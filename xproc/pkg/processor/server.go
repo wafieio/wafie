@@ -37,12 +37,12 @@ func NewExternalProcessor(apiAddr string, logger *zap.Logger) *ExternalProcessor
 func (s *ExternalProcessor) getProtectionId(hdrs []*core.HeaderValue) uint32 {
 	for _, hdr := range hdrs {
 		if hdr.Key == wafieProtectionIdHeader {
-			s.logger.Info("protection id", zap.String("protection_id", hdr.Value))
 			val, err := strconv.ParseUint(string(hdr.RawValue), 10, 32)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return 0
 			}
+			s.logger.Info("protection", zap.Uint32("id", uint32(val)))
 			return uint32(val)
 		}
 	}
@@ -128,22 +128,26 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 }
 
 func (s *ExternalProcessor) interventionResponse(evalRequest *modsec.EvalRequest) *extproc.ProcessingResponse {
-	headers := s.modsec.InterventionContext(evalRequest)
-	headers = append(headers, &core.HeaderValueOption{
-		Header: &core.HeaderValue{
-			Key:      "content-type",
-			RawValue: []byte("text/html"),
+	immediateResponse := &extproc.ImmediateResponse{
+		Status: &typev3.HttpStatus{Code: typev3.StatusCode_Forbidden},
+		Headers: &extproc.HeaderMutation{
+			SetHeaders: []*core.HeaderValueOption{
+				{
+					Header: &core.HeaderValue{
+						Key:      "content-type",
+						RawValue: []byte("text/html"),
+					},
+				},
+			},
 		},
-	})
+		Body: s.assets.BlockPage(),
+	}
+	// enrich with context
+	s.modsec.EnrichWithInterventionContext(evalRequest, immediateResponse)
+	// return optionally enriched response
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{
-			ImmediateResponse: &extproc.ImmediateResponse{
-				Status: &typev3.HttpStatus{Code: typev3.StatusCode_Unauthorized},
-				Headers: &extproc.HeaderMutation{
-					SetHeaders: headers,
-				},
-				Body: s.assets.BlockPage(),
-			},
+			ImmediateResponse: immediateResponse,
 		},
 	}
 }
