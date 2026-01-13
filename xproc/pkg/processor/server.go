@@ -84,7 +84,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			intervened := s.modsec.EvaluateHeaders(evalRequest)
 			// if intervened, block request
 			if intervened {
-				resp = s.interventionResponse()
+				resp = s.interventionResponse(evalRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestHeaders{
@@ -104,7 +104,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalRequest)
 			intervened := s.modsec.EvaluateBody(evalRequest)
 			if intervened {
-				resp = s.interventionResponse()
+				resp = s.interventionResponse(evalRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestBody{
@@ -127,20 +127,20 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 	}
 }
 
-func (s *ExternalProcessor) interventionResponse() *extproc.ProcessingResponse {
+func (s *ExternalProcessor) interventionResponse(evalRequest *modsec.EvalRequest) *extproc.ProcessingResponse {
+	headers := s.modsec.InterventionContext(evalRequest)
+	headers = append(headers, &core.HeaderValueOption{
+		Header: &core.HeaderValue{
+			Key:      "content-type",
+			RawValue: []byte("text/html"),
+		},
+	})
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{
 			ImmediateResponse: &extproc.ImmediateResponse{
-				Status: &typev3.HttpStatus{Code: typev3.StatusCode_Forbidden},
+				Status: &typev3.HttpStatus{Code: typev3.StatusCode_Unauthorized},
 				Headers: &extproc.HeaderMutation{
-					SetHeaders: []*core.HeaderValueOption{
-						{
-							Header: &core.HeaderValue{
-								Key:      "content-type",
-								RawValue: []byte("text/html"),
-							},
-						},
-					},
+					SetHeaders: headers,
 				},
 				Body: s.assets.BlockPage(),
 			},

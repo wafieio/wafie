@@ -24,6 +24,7 @@ typedef struct {
     char *http_method;
     char *http_version;
     char *body;
+    char *intervention_url;
     size_t headers_count;
     int total_loaded_rules;
     uint32_t protection_id;
@@ -39,8 +40,8 @@ void wafie_cleanup(WafieEvaluationRequest const *request);
 
 void wafie_load_rule_sets(WafieRuleSetConfig cfg[], int cfg_size);
 
-int wafie_process_request_headers(WafieEvaluationRequest const *request);
+int wafie_process_request_headers(WafieEvaluationRequest *request);
 
-int wafie_process_request_body(WafieEvaluationRequest const *request);
+int wafie_process_request_body(WafieEvaluationRequest *request);
 
 #endif //WAFIELIB_LIBRARY_H

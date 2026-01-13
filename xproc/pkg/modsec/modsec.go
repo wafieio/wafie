@@ -175,11 +175,17 @@ func (s *ModeSec) writeRules(protectionId uint32, ruleSetMd5 string, ruleSets []
 		if err := os.MkdirAll(dirPath, 0755); err != nil {
 			return false, err
 		}
-		if err := os.WriteFile(ruleFile, []byte(rules.CrsFileContent), 0700); err != nil {
+		if err := os.WriteFile(ruleFile, s.applyRulesPatches(rules.CrsFileContent, rulesDir), 0700); err != nil {
 			return false, err
 		}
 	}
 	return reloadRequire, nil
+}
+
+func (s *ModeSec) applyRulesPatches(crsFileContent, rulesDir string) []byte {
+	// set rules base path
+	res := []byte(strings.ReplaceAll(crsFileContent, "<<<WAFIEIO_XPROC_RULES_BASE_PATH>>>", rulesDir))
+	return res
 }
 
 func (s *ModeSec) reloadCRSRules(ruleSetConfigForReload map[string]uint32) {
@@ -294,6 +300,7 @@ func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
 	C.free(unsafe.Pointer(evalRequest.http_method))
 	C.free(unsafe.Pointer(evalRequest.http_version))
 	C.free(unsafe.Pointer(evalRequest.body))
+	C.free(unsafe.Pointer(evalRequest.intervention_url))
 	for i := 0; i < int(evalRequest.headers_count); i++ {
 		hdr := (*C.WafieEvaluationRequestHeader)(
 			unsafe.Pointer(uintptr(unsafe.Pointer(evalRequest.headers)) + uintptr(i)*
@@ -387,6 +394,33 @@ func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
 	}
 
 	return false
+}
+
+func (s *ModeSec) InterventionContext(evalRequest *EvalRequest) []*corev3.HeaderValueOption {
+	var headers []*corev3.HeaderValueOption
+	var interventionURL string
+	if evalRequest.intervention_url == nil {
+		return nil
+	}
+	interventionURL = C.GoString(evalRequest.intervention_url)
+	// add header to response
+	// redirect:'ah>WWW-Authenticate:Basic realm=\"Restricted Area\"', \
+	if strings.HasPrefix(interventionURL, "ah>") {
+		header := strings.Split(strings.ReplaceAll(interventionURL, "ah>", ""), ":")
+		if len(header) < 1 {
+			s.logger.Error("wrong add heder context", zap.String("intervention_url", interventionURL))
+			return nil
+		}
+
+		headers = append(headers, &corev3.HeaderValueOption{
+			Header: &corev3.HeaderValue{
+				Key:      header[0],
+				RawValue: []byte(header[1]),
+			},
+		})
+	}
+
+	return headers
 }
 
 func (s *ModeSec) EvaluateBody(evalRequest *EvalRequest) (intervened bool) {

@@ -5,8 +5,8 @@ dev:
     workingDir: /go/src/github.com/wafieio/wafie
     labelSelector:
       app: "wafie-gateway"
-    container: proxy-ads
-#    container: proxy-xproc
+#    container: proxy-ads
+    container: proxy-xproc
     devImage: docker.io/wafieio/xproc
     sync:
       - path: ./:./
