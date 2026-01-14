@@ -1,3 +1,0 @@
-{{{range $index, $path := .Auth.BasicAuth.PathWhitelist}}}
-{{{ $path }}}
-{{{end}}}

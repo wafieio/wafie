@@ -39,14 +39,29 @@ type BasicAuthUser struct {
 	Pass string `json:"pass"`
 }
 
+type TokenAuthToken struct {
+	Token       string `json:"token"`
+	ValidAfter  uint64 `json:"validAfter"`  // the earliest moment the token can be used.
+	ValidBefore uint64 `json:"validBefore"` // the moment the token becomes "trash."
+	Description string `json:"description"`
+}
+
 type BasicAuth struct {
 	Users         []BasicAuthUser `json:"users"`
 	Enabled       bool            `json:"enabled"`
 	PathWhitelist []string        `json:"pathWhitelist"`
 }
 
+type TokenAuth struct {
+	Header        string            `json:"header"`
+	Tokens        []*TokenAuthToken `json:"tokens"`
+	Enabled       bool              `json:"enabled"`
+	PathWhitelist []string          `json:"pathWhitelist"`
+}
+
 type Auth struct {
 	BasicAuth *BasicAuth `json:"basicAuth"`
+	TokenAuth *TokenAuth `json:"tokenAuth"`
 }
 type ProtectionDesiredState struct {
 	Waf               *Waf     `json:"waf"`
@@ -133,12 +148,23 @@ func (s *ProtectionDesiredState) Merge(req *wv1.PutProtectionRequest) {
 		s.IPRules = &IPRules{}
 	}
 	s.IPRules.Merge(req)
-	// if Auth not null
+	//set auth
+	if s.Auth == nil {
+		s.Auth = &Auth{}
+	}
+	// set basic auth
 	if req.BasicAuth != nil {
-		if s.Auth == nil {
-			s.Auth = &Auth{BasicAuth: &BasicAuth{}}
+		if s.Auth.BasicAuth == nil {
+			s.Auth.BasicAuth = &BasicAuth{}
 		}
 		s.Auth.BasicAuth.Merge(req.BasicAuth)
+	}
+	// set token auth
+	if req.TokenAuth != nil {
+		if s.Auth.TokenAuth == nil {
+			s.Auth.TokenAuth = &TokenAuth{}
+		}
+		s.Auth.TokenAuth.Merge(req.TokenAuth)
 	}
 }
 
@@ -192,11 +218,94 @@ func (ba *BasicAuth) Merge(reqBasicAuth *wv1.BasicAuthPutRequest) {
 			if currentUser.User == userToAdd.User {
 				// do not duplicate the user, but do update the password
 				found = true
-				currentUser.Pass = userToAdd.Pass
+				if userToAdd.Pass != "" {
+					currentUser.Pass = userToAdd.Pass
+				}
 			}
 		}
 		if !found {
 			ba.Users = append(ba.Users, BasicAuthUser{User: userToAdd.User, Pass: userToAdd.Pass})
+		}
+	}
+}
+
+func (ta *TokenAuth) Merge(reqTokenAuth *wv1.TokenAuthPutRequest) {
+	if reqTokenAuth == nil {
+		return
+	}
+	// if set by request, set enabled
+	if reqTokenAuth.Enabled != nil {
+		ta.Enabled = *reqTokenAuth.Enabled
+	}
+	// find all indexes for removal
+	var removeAt []int
+	for idx, currentPath := range ta.PathWhitelist {
+		for _, pathToRemove := range reqTokenAuth.PathWhitelistToRemove {
+			if currentPath == pathToRemove {
+				removeAt = append(removeAt, idx)
+				continue
+			}
+		}
+	}
+	// remove paths whitelists
+	for _, removeIdx := range removeAt {
+		ta.PathWhitelist = append(ta.PathWhitelist[:removeIdx], ta.PathWhitelist[removeIdx+1:]...)
+	}
+	// add new paths whitelists
+	for _, newPathWhitelist := range reqTokenAuth.PathWhitelistToAdd {
+		found := false
+		for _, currentPath := range ta.PathWhitelist {
+			if newPathWhitelist == currentPath {
+				found = true
+			}
+		}
+		if !found {
+			ta.PathWhitelist = append(ta.PathWhitelist, newPathWhitelist)
+		}
+	}
+	// remove tokens
+	removeAt = []int{}
+	for idx, currentToken := range ta.Tokens {
+		for _, tokenToRemove := range reqTokenAuth.TokensToRemove {
+			if currentToken.Token == tokenToRemove.Token {
+				removeAt = append(removeAt, idx)
+			}
+		}
+	}
+	for _, removeIdx := range removeAt {
+		ta.Tokens = append(ta.Tokens[:removeIdx], ta.Tokens[removeIdx+1:]...)
+	}
+	// add tokens
+	for _, tokenToAdd := range reqTokenAuth.TokensToAdd {
+		found := false
+		for _, currentToken := range ta.Tokens {
+			if currentToken.Token == tokenToAdd.Token {
+				// do not duplicate the token, but do update the fields
+				found = true
+				if tokenToAdd.ValidAfter != nil {
+					currentToken.ValidAfter = *tokenToAdd.ValidAfter
+				}
+				if tokenToAdd.ValidBefore != nil {
+					currentToken.ValidBefore = *tokenToAdd.ValidBefore
+				}
+				if tokenToAdd.Description != nil {
+					currentToken.Description = *tokenToAdd.Description
+				}
+
+			}
+		}
+		if !found {
+			token := &TokenAuthToken{Token: tokenToAdd.Token}
+			if tokenToAdd.ValidAfter != nil {
+				token.ValidAfter = *tokenToAdd.ValidAfter
+			}
+			if tokenToAdd.ValidBefore != nil {
+				token.ValidBefore = *tokenToAdd.ValidBefore
+			}
+			if tokenToAdd.Description != nil {
+				token.Description = *tokenToAdd.Description
+			}
+			ta.Tokens = append(ta.Tokens, token)
 		}
 	}
 }
@@ -253,16 +362,20 @@ func (f *Waf) FromProto(v1desiredState *wv1.Waf) {
 }
 
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
-	state := &wv1.ProtectionDesiredState{}
+	state := &wv1.ProtectionDesiredState{
+		Auth: &wv1.Auth{BasicAuth: &wv1.BasicAuth{}, TokenAuth: &wv1.TokenAuth{}}}
+	// waf
 	if s.Waf != nil {
 		state.Waf = &wv1.Waf{
 			ProtectionMode: wv1.ProtectionMode(s.Waf.Mode),
 			ParanoiaLevel:  wv1.ParanoiaLevel(s.Waf.ParanoiaLevel),
 		}
 	}
+	// trusted hops
 	if s.XffNumTrustedHops != nil {
 		state.XffNumTrustedHops = s.XffNumTrustedHops
 	}
+	// ip rules
 	if s.IPRules != nil {
 		var block = make([]*wv1.IP, len(s.IPRules.Block))
 		for idx, ip := range s.IPRules.Block {
@@ -274,19 +387,37 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 		}
 		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
 	}
-	if s.Auth != nil && s.Auth.BasicAuth != nil {
+	// basic auth
+	if s.Auth.BasicAuth != nil {
 		basicAuthUser := make([]*wv1.BasicAuthUser, len(s.Auth.BasicAuth.Users))
 		for idx, user := range s.Auth.BasicAuth.Users {
 			basicAuthUser[idx] = &wv1.BasicAuthUser{User: user.User, Pass: user.Pass}
 		}
-		state.Auth = &wv1.Auth{
-			BasicAuth: &wv1.BasicAuth{
-				Users:         basicAuthUser,
-				PathWhitelist: s.Auth.BasicAuth.PathWhitelist,
-				Enabled:       &s.Auth.BasicAuth.Enabled,
-			},
+		state.Auth.BasicAuth = &wv1.BasicAuth{
+			Users:         basicAuthUser,
+			PathWhitelist: s.Auth.BasicAuth.PathWhitelist,
+			Enabled:       &s.Auth.BasicAuth.Enabled,
 		}
 	}
+	// token auth
+	if s.Auth.TokenAuth != nil {
+		authTokens := make([]*wv1.TokenAuthToken, len(s.Auth.TokenAuth.Tokens))
+		for idx, token := range s.Auth.TokenAuth.Tokens {
+			authTokens[idx] = &wv1.TokenAuthToken{
+				Token:       token.Token,
+				ValidAfter:  &token.ValidAfter,
+				ValidBefore: &token.ValidBefore,
+				Description: &token.Description,
+			}
+		}
+		state.Auth.TokenAuth = &wv1.TokenAuth{
+			Header:        s.Auth.TokenAuth.Header,
+			Tokens:        authTokens,
+			PathWhitelist: s.Auth.TokenAuth.PathWhitelist,
+			Enabled:       &s.Auth.TokenAuth.Enabled,
+		}
+	}
+
 	return state
 }
 

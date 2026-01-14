@@ -32,6 +32,13 @@ message BasicAuthUser {
   string pass = 2;
 }
 
+message TokenAuthToken {
+  string token = 1;
+  optional uint64 valid_after = 2;
+  optional uint64 valid_before = 3;
+  optional string description = 4;
+}
+
 message BasicAuthPutRequest {
   repeated BasicAuthUser users_to_add = 1;
   repeated BasicAuthUser users_to_remove = 2;
@@ -40,14 +47,32 @@ message BasicAuthPutRequest {
   optional bool enabled = 5;
 }
 
+message TokenAuthPutRequest {
+  repeated TokenAuthToken tokens_to_add = 1;
+  repeated TokenAuthToken tokens_to_remove = 2;
+  repeated string path_whitelist_to_add = 3;
+  repeated string path_whitelist_to_remove = 4;
+  optional bool enabled = 5;
+  optional string header = 6;
+
+}
+
 message BasicAuth {
   repeated BasicAuthUser users = 1;
   repeated string path_whitelist = 3;
   optional bool enabled = 4;
 }
 
+message TokenAuth {
+  string header = 1;
+  repeated TokenAuthToken tokens = 2;
+  optional bool enabled = 3;
+  repeated string path_whitelist = 4;
+}
+
 message Auth {
   optional BasicAuth basic_auth = 1;
+  optional TokenAuth token_auth = 2;
 }
 
 message IP {
@@ -112,6 +137,7 @@ message PutProtectionRequest {
   optional IPRules ip_rules_to_add = 5;
   optional IPRules ip_rules_to_remove = 6;
   optional BasicAuthPutRequest basic_auth = 7;
+  optional TokenAuthPutRequest token_auth = 9;
 
 }
 
