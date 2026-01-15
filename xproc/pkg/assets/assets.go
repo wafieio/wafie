@@ -24,6 +24,11 @@ func (a *Assets) BlockPage() []byte {
 	return []byte(a.readAssetAsString(assetName))
 }
 
+func (a *Assets) RecaptchaPage() []byte {
+	assetName := "recaptcha.html"
+	return []byte(a.readAssetAsString(assetName))
+}
+
 func (a *Assets) readAssetAsString(assetName string) string {
 	data, err := assets.ReadFile(assetName)
 	if err != nil {

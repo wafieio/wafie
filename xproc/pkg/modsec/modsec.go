@@ -12,8 +12,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
-	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,6 +21,10 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	extproc "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/wafieio/wafie/xproc/pkg/assets"
 
 	"connectrpc.com/connect"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -36,6 +38,7 @@ const (
 	InterventionContextKey                = "sys?"
 	InterventionContextKeyBasicAuthHeader = "basicAuthHeader"
 	InterventionContextKeyStatus          = "status"
+	InterventionContextBody               = "body"
 )
 
 type EvalRequest C.WafieEvaluationRequest
@@ -406,13 +409,13 @@ func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
 	return false
 }
 
-func (s *ModeSec) EnrichWithInterventionContext(evalRequest *EvalRequest, response *extproc.ImmediateResponse) {
+func (s *ModeSec) EnrichWithInterventionContext(er *EvalRequest, r *extproc.ImmediateResponse, a *assets.Assets) {
 	var interventionURL string
-	if evalRequest.intervention_url == nil {
+	if er.intervention_url == nil {
 		return
 	}
-	interventionURL = C.GoString(evalRequest.intervention_url)
-	// example -> redirect:'sys?basicAuthHeader=true&status=401', \
+	interventionURL = C.GoString(er.intervention_url)
+	// example -> redirect:'sys?basicAuthHeader=true&status=401,body=recaptcha', \
 	if strings.HasPrefix(interventionURL, InterventionContextKey) {
 		params, err := url.ParseQuery(strings.ReplaceAll(interventionURL, InterventionContextKey, ""))
 		if err != nil {
@@ -420,7 +423,7 @@ func (s *ModeSec) EnrichWithInterventionContext(evalRequest *EvalRequest, respon
 			return
 		}
 		if params.Get(InterventionContextKeyBasicAuthHeader) != "" {
-			response.Headers.SetHeaders = append(response.Headers.SetHeaders, &corev3.HeaderValueOption{
+			r.Headers.SetHeaders = append(r.Headers.SetHeaders, &corev3.HeaderValueOption{
 				Header: &corev3.HeaderValue{
 					Key:      "WWW-Authenticate",
 					RawValue: []byte("Basic realm=\"Restricted Area\""),
@@ -432,7 +435,16 @@ func (s *ModeSec) EnrichWithInterventionContext(evalRequest *EvalRequest, respon
 			if err != nil {
 				s.logger.Error("error parsing intervention status", zap.Error(err))
 			}
-			response.Status = &typev3.HttpStatus{Code: typev3.StatusCode(i)}
+			r.Status = &typev3.HttpStatus{Code: typev3.StatusCode(i)}
+		}
+
+		switch params.Get(InterventionContextBody) {
+		case "block":
+			r.Body = a.BlockPage()
+		case "recaptcha":
+			r.Body = a.RecaptchaPage()
+		default:
+			r.Body = a.BlockPage()
 		}
 	}
 }

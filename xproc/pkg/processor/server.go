@@ -143,7 +143,7 @@ func (s *ExternalProcessor) interventionResponse(evalRequest *modsec.EvalRequest
 		Body: s.assets.BlockPage(),
 	}
 	// enrich with context
-	s.modsec.EnrichWithInterventionContext(evalRequest, immediateResponse)
+	s.modsec.EnrichWithInterventionContext(evalRequest, immediateResponse, s.assets)
 	// return optionally enriched response
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{
