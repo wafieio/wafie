@@ -133,7 +133,7 @@
             <div class="form-container">
                 <div class="recaptcha-container">
                     <div class="g-recaptcha"
-                         data-sitekey="{{.SiteKey}}"
+                         data-sitekey="6Lc7yEssAAAAALdnqEagIlQuz0SgBw2MDwJeJkcB"
                          data-callback="onRecaptchaSuccess"
                          data-expired-callback="onRecaptchaExpired"
                          data-error-callback="onRecaptchaError">
@@ -205,7 +205,7 @@
 
         async function submitRecaptcha(token) {
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch("/v2/g-recaptcha-response", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -228,7 +228,7 @@
                                 window.location.href = redirectMatch[1];
                             } else {
                                 // Default redirect to original page
-                                window.location.href = '{{.RedirectURL}}' || '/';
+                                window.location.href = 'http://wp.10.100.102.92.nip.io/sample-page' || '/';
                             }
                         } else {
                             showError('Verification failed. Please try again.');

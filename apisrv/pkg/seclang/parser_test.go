@@ -128,6 +128,22 @@ func TestParseRule(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:     "Unquoted operator parameter with complex actions",
+			ruleText: `SecRule REQUEST_URI @streq /foo/bar id:10001,phase:1,pass,nolog,redirect:'sys?body=recaptcha&status=200'`,
+			expected: &SecRule{
+				Variables: []Variable{{Name: "REQUEST_URI"}},
+				Operator:  Operator{Type: "@streq", Parameter: "/foo/bar"},
+				Actions: []Action{
+					{Name: "id", Parameter: "10001"},
+					{Name: "phase", Parameter: "1"},
+					{Name: "pass"},
+					{Name: "nolog"},
+					{Name: "redirect", Parameter: "sys?body=recaptcha&status=200"},
+				},
+			},
+			expectError: false,
+		},
+		{
 			name:        "Empty rule",
 			ruleText:    "",
 			expected:    nil,
@@ -836,6 +852,21 @@ func TestToModSecurityRule(t *testing.T) {
 				},
 			},
 			expected: `SecRule ARGS "@rx test" "id:8001,msg:'It\'s a test message'"`,
+		},
+		{
+			name: "Operator with unquoted parameter and complex actions",
+			rule: &SecRule{
+				Variables: []Variable{{Name: "REQUEST_URI"}},
+				Operator:  Operator{Type: "@streq", Parameter: "/foo/bar"},
+				Actions: []Action{
+					{Name: "id", Parameter: "10001"},
+					{Name: "phase", Parameter: "1"},
+					{Name: "pass"},
+					{Name: "nolog"},
+					{Name: "redirect", Parameter: "sys?body=recaptcha&status=200"},
+				},
+			},
+			expected: `SecRule REQUEST_URI "@streq /foo/bar" "id:10001,phase:1,pass,nolog,redirect:'sys?body=recaptcha&status=200'"`,
 		},
 	}
 

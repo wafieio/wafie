@@ -67,10 +67,34 @@ func parseRuleComponents(ruleText string) ([]Variable, Operator, []Action, error
 		return nil, Operator{}, nil, fmt.Errorf("failed to parse variables: %w", err)
 	}
 
-	// Parse operator (second part)
-	operatorStr := strings.TrimSpace(parts[1])
-	if operatorStr == "" {
-		return nil, Operator{}, nil, ErrMissingOperator
+	// Parse operator - this can be split across multiple parts if unquoted
+	var operatorStr string
+	var actionsStartIndex int
+
+	// Handle operator parsing more intelligently
+	operatorStr = strings.TrimSpace(parts[1])
+	actionsStartIndex = 2
+
+	// Check if we have more than 3 parts total, which suggests an unquoted operator parameter
+	if len(parts) > 3 {
+		// Look for the actions part by finding a part that starts with an action-like pattern
+		// Actions typically start with id:, phase:, pass, log, deny, block, etc.
+		for i := 2; i < len(parts); i++ {
+			part := strings.TrimSpace(parts[i])
+			if isActionsLikePart(part) {
+				// Everything from parts[1] to parts[i-1] is the operator
+				operatorParts := parts[1:i]
+				operatorStr = strings.Join(operatorParts, " ")
+				actionsStartIndex = i
+				break
+			}
+		}
+		// If no actions-like part found, assume last part is actions
+		if actionsStartIndex == 2 && len(parts) > 2 {
+			operatorParts := parts[1 : len(parts)-1]
+			operatorStr = strings.Join(operatorParts, " ")
+			actionsStartIndex = len(parts) - 1
+		}
 	}
 
 	// Check for negation
@@ -90,10 +114,10 @@ func parseRuleComponents(ruleText string) ([]Variable, Operator, []Action, error
 		return nil, Operator{}, nil, fmt.Errorf("failed to parse operator: %w", err)
 	}
 
-	// Parse actions (third part, optional)
+	// Parse actions (remaining parts, optional)
 	var actions []Action
-	if len(parts) > 2 {
-		actionsStr := strings.TrimSpace(parts[2])
+	if len(parts) > actionsStartIndex {
+		actionsStr := strings.TrimSpace(parts[actionsStartIndex])
 		// Remove quotes if present
 		if strings.HasPrefix(actionsStr, "\"") && strings.HasSuffix(actionsStr, "\"") {
 			actionsStr = actionsStr[1 : len(actionsStr)-1]
@@ -332,6 +356,29 @@ func cleanLineContinations(ruleText string) string {
 
 	// Join all lines with space
 	return strings.Join(cleanedLines, " ")
+}
+
+// isActionsLikePart determines if a string looks like the start of an actions section
+func isActionsLikePart(part string) bool {
+	// Common action patterns that indicate the start of actions section
+	actionPatterns := []string{
+		"id:", "phase:", "pass", "log", "nolog", "deny", "block", "allow",
+		"status:", "msg:", "tag:", "severity:", "redirect:", "drop",
+		"chain", "skip:", "skipAfter:", "t:", "capture", "initcol:",
+		"setvar:", "expirevar:", "deprecatevar:", "exec:", "sanitiseArg:",
+		"sanitiseMatched", "sanitiseRequestHeader:", "sanitiseResponseHeader:",
+		"multimatch", "noauditlog", "auditlog", "logdata:", "ver:", "maturity:",
+		"accuracy:", "rev:", "ctl:",
+	}
+
+	partLower := strings.ToLower(part)
+	for _, pattern := range actionPatterns {
+		if strings.HasPrefix(partLower, strings.ToLower(pattern)) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ValidateRule validates a parsed SecRule for completeness and correctness
