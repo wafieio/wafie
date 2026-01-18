@@ -128,6 +128,12 @@ func (s *ProtectionDesiredState) FromProto(v1desiredState *wv1.ProtectionDesired
 		}
 		s.IPRules.FromProto(v1desiredState.IpRules)
 	}
+	if v1desiredState.Auth != nil {
+		if s.Auth == nil {
+			s.Auth = &Auth{}
+		}
+		s.Auth.FromProto(v1desiredState.Auth)
+	}
 }
 
 func (s *ProtectionDesiredState) Merge(req *wv1.PutProtectionRequest) {
@@ -359,6 +365,48 @@ func (p *IPRules) FromProto(ipRules *wv1.IPRules) {
 func (f *Waf) FromProto(v1desiredState *wv1.Waf) {
 	f.ParanoiaLevel = uint32(v1desiredState.ParanoiaLevel)
 	f.Mode = uint32(v1desiredState.ProtectionMode)
+}
+
+func (a *Auth) FromProto(v1auth *wv1.Auth) {
+	if v1auth.BasicAuth != nil {
+		if a.BasicAuth == nil {
+			a.BasicAuth = &BasicAuth{}
+		}
+		a.BasicAuth.FromProto(v1auth.BasicAuth)
+	}
+	if v1auth.TokenAuth != nil {
+		if a.TokenAuth == nil {
+			a.TokenAuth = &TokenAuth{}
+		}
+		a.TokenAuth.FromProto(v1auth.TokenAuth)
+	}
+}
+
+func (b *BasicAuth) FromProto(v1basicAuth *wv1.BasicAuth) {
+	b.Enabled = v1basicAuth.Enabled != nil && *v1basicAuth.Enabled
+	b.PathWhitelist = v1basicAuth.PathWhitelist
+	b.Users = make([]BasicAuthUser, len(v1basicAuth.Users))
+	for i, user := range v1basicAuth.Users {
+		b.Users[i] = BasicAuthUser{
+			User: user.User,
+			Pass: user.Pass,
+		}
+	}
+}
+
+func (t *TokenAuth) FromProto(v1tokenAuth *wv1.TokenAuth) {
+	t.Enabled = v1tokenAuth.Enabled != nil && *v1tokenAuth.Enabled
+	t.Header = v1tokenAuth.Header
+	t.PathWhitelist = v1tokenAuth.PathWhitelist
+	t.Tokens = make([]*TokenAuthToken, len(v1tokenAuth.Tokens))
+	for i, token := range v1tokenAuth.Tokens {
+		t.Tokens[i] = &TokenAuthToken{
+			Token:       token.Token,
+			ValidAfter:  token.ValidAfter,
+			ValidBefore: token.ValidBefore,
+			Description: token.Description,
+		}
+	}
 }
 
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {

@@ -429,6 +429,8 @@ func (s *ModeSec) EnrichWithInterventionContext(er *EvalRequest, r *extproc.Imme
 					RawValue: []byte("Basic realm=\"Restricted Area\""),
 				},
 			})
+			// Clear body for Basic Auth - browsers need empty body to show password dialog
+			r.Body = ""
 		}
 		if status := params.Get(InterventionContextKeyStatus); status != "" {
 			i, err := strconv.Atoi(status)
