@@ -52,6 +52,22 @@ func NewDb(cfg *DbCfg) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Configure connection pool for stability
+	sqlDB, err := dbConn.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+	sqlDB.SetMaxIdleConns(10)
+
+	// SetMaxOpenConns sets the maximum number of open connections to the database.
+	sqlDB.SetMaxOpenConns(100)
+
+	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	sqlDB.SetConnMaxLifetime(0) // 0 = no limit (connections are reused forever unless broken)
+
 	//dbConn = dbConn.Debug()
 	if err := migrate(dbConn); err != nil {
 		return nil, err
