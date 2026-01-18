@@ -50,10 +50,16 @@ func (s *ExternalProcessor) getProtectionId(hdrs []*core.HeaderValue) uint32 {
 }
 
 func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServer) error {
-	var evalRequest *modsec.EvalRequest
+	var evalProcessRequest *modsec.EvalRequest
+	var evalProcessResponse *modsec.EvalRequest
+	var envoyProcessingAttributes modsec.EnvoyRequestAttributes
+	var protectionId uint32
 	defer func() {
-		if evalRequest != nil {
-			s.modsec.DestroyTransaction(evalRequest)
+		if evalProcessRequest != nil {
+			s.modsec.DestroyTransaction(evalProcessRequest)
+		}
+		if evalProcessResponse != nil {
+			s.modsec.DestroyTransaction(evalProcessResponse)
 		}
 	}()
 	for {
@@ -70,21 +76,22 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		case *extproc.ProcessingRequest_RequestHeaders:
 			log.Println("Processing request headers")
 			// get protection ID
-			protectionId := s.getProtectionId(r.RequestHeaders.Headers.Headers)
+			protectionId = s.getProtectionId(r.RequestHeaders.Headers.Headers)
 			if protectionId == 0 {
 				s.logger.Warn("protection id is undefined")
 			}
 			// init eval request
-			evalRequest = s.modsec.InitEvalRequest(
-				req.Attributes["envoy.filters.http.ext_proc"].GetFields(),
+			envoyProcessingAttributes = modsec.NewEnvoyRequestAttributes(req.Attributes["envoy.filters.http.ext_proc"].GetFields())
+			evalProcessRequest = s.modsec.InitEvalRequest(
+				envoyProcessingAttributes,
 				r.RequestHeaders.Headers.Headers,
 				protectionId,
 			)
 			// process transaction
-			intervened := s.modsec.EvaluateHeaders(evalRequest)
+			intervened := s.modsec.EvaluateHeaders(evalProcessRequest)
 			// if intervened, block request
 			if intervened {
-				resp = s.interventionResponse(evalRequest)
+				resp = s.interventionResponse(evalProcessRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestHeaders{
@@ -93,18 +100,29 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 				}
 			}
 		case *extproc.ProcessingRequest_ResponseHeaders:
-			resp = &extproc.ProcessingResponse{
-				Response: &extproc.ProcessingResponse_ResponseHeaders{
-					ResponseHeaders: &extproc.HeadersResponse{},
-				},
+			evalProcessResponse = s.modsec.InitEvalRequest(
+				envoyProcessingAttributes,
+				r.ResponseHeaders.Headers.Headers,
+				protectionId,
+			)
+			// process transaction
+			intervened := s.modsec.EvaluateHeaders(evalProcessResponse)
+			if intervened {
+				resp = s.interventionResponse(evalProcessResponse)
+			} else {
+				resp = &extproc.ProcessingResponse{
+					Response: &extproc.ProcessingResponse_ResponseHeaders{
+						ResponseHeaders: &extproc.HeadersResponse{},
+					},
+				}
 			}
 		// Request Body Evaluation
 		case *extproc.ProcessingRequest_RequestBody:
 			log.Println("Processing request body")
-			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalRequest)
-			intervened := s.modsec.EvaluateBody(evalRequest)
+			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalProcessRequest)
+			intervened := s.modsec.EvaluateBody(evalProcessRequest)
 			if intervened {
-				resp = s.interventionResponse(evalRequest)
+				resp = s.interventionResponse(evalProcessRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestBody{

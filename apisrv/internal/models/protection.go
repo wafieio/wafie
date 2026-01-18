@@ -387,37 +387,38 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 		}
 		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
 	}
-	// basic auth
-	if s.Auth.BasicAuth != nil {
-		basicAuthUser := make([]*wv1.BasicAuthUser, len(s.Auth.BasicAuth.Users))
-		for idx, user := range s.Auth.BasicAuth.Users {
-			basicAuthUser[idx] = &wv1.BasicAuthUser{User: user.User, Pass: user.Pass}
-		}
-		state.Auth.BasicAuth = &wv1.BasicAuth{
-			Users:         basicAuthUser,
-			PathWhitelist: s.Auth.BasicAuth.PathWhitelist,
-			Enabled:       &s.Auth.BasicAuth.Enabled,
-		}
-	}
-	// token auth
-	if s.Auth.TokenAuth != nil {
-		authTokens := make([]*wv1.TokenAuthToken, len(s.Auth.TokenAuth.Tokens))
-		for idx, token := range s.Auth.TokenAuth.Tokens {
-			authTokens[idx] = &wv1.TokenAuthToken{
-				Token:       token.Token,
-				ValidAfter:  &token.ValidAfter,
-				ValidBefore: &token.ValidBefore,
-				Description: &token.Description,
+	if s.Auth != nil {
+		// basic auth
+		if s.Auth.BasicAuth != nil {
+			basicAuthUser := make([]*wv1.BasicAuthUser, len(s.Auth.BasicAuth.Users))
+			for idx, user := range s.Auth.BasicAuth.Users {
+				basicAuthUser[idx] = &wv1.BasicAuthUser{User: user.User, Pass: user.Pass}
+			}
+			state.Auth.BasicAuth = &wv1.BasicAuth{
+				Users:         basicAuthUser,
+				PathWhitelist: s.Auth.BasicAuth.PathWhitelist,
+				Enabled:       &s.Auth.BasicAuth.Enabled,
 			}
 		}
-		state.Auth.TokenAuth = &wv1.TokenAuth{
-			Header:        s.Auth.TokenAuth.Header,
-			Tokens:        authTokens,
-			PathWhitelist: s.Auth.TokenAuth.PathWhitelist,
-			Enabled:       &s.Auth.TokenAuth.Enabled,
+		// token auth
+		if s.Auth.TokenAuth != nil {
+			authTokens := make([]*wv1.TokenAuthToken, len(s.Auth.TokenAuth.Tokens))
+			for idx, token := range s.Auth.TokenAuth.Tokens {
+				authTokens[idx] = &wv1.TokenAuthToken{
+					Token:       token.Token,
+					ValidAfter:  &token.ValidAfter,
+					ValidBefore: &token.ValidBefore,
+					Description: &token.Description,
+				}
+			}
+			state.Auth.TokenAuth = &wv1.TokenAuth{
+				Header:        s.Auth.TokenAuth.Header,
+				Tokens:        authTokens,
+				PathWhitelist: s.Auth.TokenAuth.PathWhitelist,
+				Enabled:       &s.Auth.TokenAuth.Enabled,
+			}
 		}
 	}
-
 	return state
 }
 

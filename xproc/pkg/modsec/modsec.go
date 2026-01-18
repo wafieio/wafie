@@ -340,10 +340,9 @@ func (s *ModeSec) requestAttributes(envoyProcessingAttributes map[string]*struct
 }
 
 func (s *ModeSec) InitEvalRequest(
-	envoyProcessingAttributes map[string]*structpb.Value,
+	attributes EnvoyRequestAttributes,
 	hdrs []*corev3.HeaderValue, protectionId uint32) *EvalRequest {
 	evalRequest := EvalRequest{}
-	attributes := NewEnvoyRequestAttributes(envoyProcessingAttributes)
 	// set basic intervention parameters
 	evalRequest.client_ip = C.CString(attributes.SourceAddress())
 	evalRequest.uri = C.CString(attributes.RequestPath())
@@ -443,6 +442,10 @@ func (s *ModeSec) EnrichWithInterventionContext(er *EvalRequest, r *extproc.Imme
 			r.Body = a.BlockPage()
 		case "recaptcha":
 			r.Body = a.RecaptchaPage()
+		case "recaptchaSuccess":
+			r.Body = []byte(`{"result":"success"}`)
+		case "recaptchaError":
+			r.Body = []byte(`{"result":"error"}`)
 		default:
 			r.Body = a.BlockPage()
 		}

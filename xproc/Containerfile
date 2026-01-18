@@ -28,7 +28,10 @@ RUN apt -y update \
       wget \
       unzip \
       lua5.4 \
-      liblua5.4-dev
+      liblua5.4-dev \
+      lua-socket \
+      lua-cjson \
+      lua-sec
 RUN wget "https://go.dev/dl/${GO_VERSION}" \
     && tar -C /usr/local -xzf ${GO_VERSION} \
     && rm ${GO_VERSION}
