@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/Masterminds/sprig/v3"
-	"github.com/wafieio/wafie/apisrv/pkg/seclang"
 	"io"
 	"regexp"
 	"strconv"
 	"text/template"
 	"time"
+
+	"github.com/Masterminds/sprig/v3"
+	"github.com/wafieio/wafie/apisrv/pkg/seclang"
 
 	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	applogger "github.com/wafieio/wafie/logger"
@@ -179,9 +180,8 @@ func (r *CRSRepository) ProtectionDesiredState(crsVersionId uint) (*ProtectionDe
 		p.DesiredState.IPRules = &IPRules{}
 	}
 	if p.DesiredState.Auth == nil {
-		p.DesiredState.Auth = &Auth{BasicAuth: &BasicAuth{}}
+		p.DesiredState.Auth = &Auth{BasicAuth: &BasicAuth{}, TokenAuth: &TokenAuth{}}
 	}
-	//err := ruleSet.Render(&p.DesiredState)
 	return &p.DesiredState, nil
 }
 
