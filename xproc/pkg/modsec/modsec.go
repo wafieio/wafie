@@ -307,21 +307,6 @@ func (s *ModeSec) runRulesetWatcher() {
 func (s *ModeSec) DestroyTransaction(evalRequest *EvalRequest) {
 	// log and cleanup transaction
 	C.wafie_cleanup((*C.WafieEvaluationRequest)(evalRequest))
-	// free allocated evaluation request
-	C.free(unsafe.Pointer(evalRequest.client_ip))
-	C.free(unsafe.Pointer(evalRequest.uri))
-	C.free(unsafe.Pointer(evalRequest.http_method))
-	C.free(unsafe.Pointer(evalRequest.http_version))
-	C.free(unsafe.Pointer(evalRequest.body))
-	C.free(unsafe.Pointer(evalRequest.intervention_url))
-	for i := 0; i < int(evalRequest.headers_count); i++ {
-		hdr := (*C.WafieEvaluationRequestHeader)(
-			unsafe.Pointer(uintptr(unsafe.Pointer(evalRequest.headers)) + uintptr(i)*
-				unsafe.Sizeof(C.WafieEvaluationRequestHeader{})))
-		C.free(unsafe.Pointer(hdr.key))
-		C.free(unsafe.Pointer(hdr.value))
-	}
-	C.free(unsafe.Pointer(evalRequest.headers))
 }
 
 func (s *ModeSec) requestAttributes(envoyProcessingAttributes map[string]*structpb.Value) map[string]string {
@@ -339,30 +324,29 @@ func (s *ModeSec) requestAttributes(envoyProcessingAttributes map[string]*struct
 	return attributes
 }
 
-func (s *ModeSec) InitEvalRequest(
-	attributes EnvoyRequestAttributes,
-	hdrs []*corev3.HeaderValue, protectionId uint32) *EvalRequest {
+func (s *ModeSec) InitEvalRequest(attr EnvoyRequestAttributes, hdrs []*corev3.HeaderValue, pid uint32) *EvalRequest {
 	evalRequest := EvalRequest{}
 	// set basic intervention parameters
-	evalRequest.client_ip = C.CString(attributes.SourceAddress())
-	evalRequest.uri = C.CString(attributes.RequestPath())
-	evalRequest.http_method = C.CString(attributes.RequestMethod())
-	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attributes.RequestProtocol()))
-	evalRequest.protection_id = C.uint32_t(protectionId)
+	evalRequest.client_ip = C.CString(attr.SourceAddress())
+	evalRequest.uri = C.CString(attr.RequestPath())
+	evalRequest.http_method = C.CString(attr.RequestMethod())
+	evalRequest.http_version = C.CString(s.getHttpProtocolVersion(attr.RequestProtocol()))
+	evalRequest.protocol = C.CString(attr.RequestProtocol())
+	evalRequest.protection_id = C.uint32_t(pid)
 	// envoy by default will be using :authority for a host header
 	// ModSecurity need host header
 	hdrs = append(hdrs, &corev3.HeaderValue{Key: "host", RawValue: s.getAuthorityHeader(hdrs)})
-	// set headers size
+	// set request headers size
 	headersCount := len(hdrs)
-	evalRequest.headers_count = C.size_t(headersCount)
-	evalRequest.headers = (*C.WafieEvaluationRequestHeader)(
+	evalRequest.request_headers_count = C.size_t(headersCount)
+	evalRequest.request_headers = (*C.WafieEvaluationRequestHeader)(
 		C.malloc(C.size_t(unsafe.Sizeof(C.WafieEvaluationRequestHeader{})) * C.size_t(headersCount)),
 	)
-	// add headers into evaluation request
+	// add request headers into evaluation request
 	for idx, hdr := range hdrs {
 		headerPtr := (*C.WafieEvaluationRequestHeader)(
 			unsafe.Pointer(
-				uintptr(unsafe.Pointer(evalRequest.headers)) +
+				uintptr(unsafe.Pointer(evalRequest.request_headers)) +
 					uintptr(idx)*unsafe.Sizeof(C.WafieEvaluationRequestHeader{}),
 			),
 		)
@@ -378,8 +362,46 @@ func (s *ModeSec) InitEvalRequest(
 	return &evalRequest
 }
 
-func (s *ModeSec) SetEvalRequestBody(body string, evalRequest *EvalRequest) {
-	evalRequest.body = C.CString(body)
+func (s *ModeSec) SetResponseHeaders(hdrs []*corev3.HeaderValue, evalRequest *EvalRequest) {
+	headersCount := len(hdrs)
+	evalRequest.response_headers_count = C.size_t(headersCount)
+	evalRequest.response_headers = (*C.WafieEvaluationRequestHeader)(
+		C.malloc(C.size_t(unsafe.Sizeof(C.WafieEvaluationRequestHeader{})) * C.size_t(headersCount)),
+	)
+	// add request headers into evaluation request
+	for idx, hdr := range hdrs {
+		headerPtr := (*C.WafieEvaluationRequestHeader)(
+			unsafe.Pointer(
+				uintptr(unsafe.Pointer(evalRequest.response_headers)) +
+					uintptr(idx)*unsafe.Sizeof(C.WafieEvaluationRequestHeader{}),
+			),
+		)
+		headerPtr.key = (*C.uchar)(unsafe.Pointer(C.CString(hdr.Key)))
+		if hdr.Value != "" {
+			headerPtr.value = (*C.uchar)(unsafe.Pointer(C.CString(hdr.Value)))
+		} else {
+			headerPtr.value = (*C.uchar)(unsafe.Pointer(C.CString(string(hdr.RawValue))))
+		}
+		// status code is placed in pseudo envoy heder
+		// to avoid code duplication, the SetResponseHeaders
+		// will also populate the response status code.
+		if hdr.Key == ":status" {
+			var statusCode uint32
+			if _, err := fmt.Sscanf(string(hdr.RawValue), "%d", &statusCode); err != nil {
+				s.logger.Error("error parsing status code", zap.Error(err))
+			} else {
+				evalRequest.response_code = C.uint32_t(statusCode)
+			}
+		}
+	}
+}
+
+func (s *ModeSec) SetRequestBody(body string, evalRequest *EvalRequest) {
+	evalRequest.request_body = C.CString(body)
+}
+
+func (s *ModeSec) SetResponseBody(body string, evalRequest *EvalRequest) {
+	evalRequest.response_body = C.CString(body)
 }
 
 func (s *ModeSec) getHttpProtocolVersion(protocol string) string {
@@ -399,21 +421,28 @@ func (s *ModeSec) getAuthorityHeader(hdrs []*corev3.HeaderValue) []byte {
 	return []byte{}
 }
 
-func (s *ModeSec) EvaluateHeaders(evalRequest *EvalRequest) (intervened bool) {
+func (s *ModeSec) ProcessRequestHeaders(evalRequest *EvalRequest) (intervened bool) {
 	if C.wafie_process_request_headers((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
-		s.logger.Debug("intervention on headers evaluation")
+		s.logger.Debug("intervention on request headers")
 		return true
 	}
-
 	return false
 }
 
-func (s *ModeSec) EnrichWithInterventionContext(er *EvalRequest, r *extproc.ImmediateResponse, a *assets.Assets) {
+func (s *ModeSec) ProcessResponseHeaders(evalRequest *EvalRequest) (intervened bool) {
+	if C.wafie_process_response_headers((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
+		s.logger.Debug("intervention on response headers")
+		return true
+	}
+	return false
+}
+
+func (s *ModeSec) EnrichWithInterventionContext(ev *EvalRequest, r *extproc.ImmediateResponse, a *assets.Assets) {
 	var interventionURL string
-	if er.intervention_url == nil {
+	if ev.intervention_url == nil {
 		return
 	}
-	interventionURL = C.GoString(er.intervention_url)
+	interventionURL = C.GoString(ev.intervention_url)
 	// example -> redirect:'sys?basicAuthHeader=true&status=401,body=recaptcha', \
 	if strings.HasPrefix(interventionURL, InterventionContextKey) {
 		params, err := url.ParseQuery(strings.ReplaceAll(interventionURL, InterventionContextKey, ""))
@@ -452,8 +481,16 @@ func (s *ModeSec) EnrichWithInterventionContext(er *EvalRequest, r *extproc.Imme
 	}
 }
 
-func (s *ModeSec) EvaluateBody(evalRequest *EvalRequest) (intervened bool) {
+func (s *ModeSec) ProcessRequestBody(evalRequest *EvalRequest) (intervened bool) {
 	if C.wafie_process_request_body((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
+		s.logger.Debug("intervention on body evaluation")
+		return true
+	}
+	return false
+}
+
+func (s *ModeSec) ProcessResponseBody(evalRequest *EvalRequest) (intervened bool) {
+	if C.wafie_process_response_body((*C.WafieEvaluationRequest)(evalRequest)) != 0 {
 		s.logger.Debug("intervention on body evaluation")
 		return true
 	}

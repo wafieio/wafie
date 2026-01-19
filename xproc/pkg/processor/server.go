@@ -50,16 +50,11 @@ func (s *ExternalProcessor) getProtectionId(hdrs []*core.HeaderValue) uint32 {
 }
 
 func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServer) error {
-	var evalProcessRequest *modsec.EvalRequest
-	var evalProcessResponse *modsec.EvalRequest
-	var envoyProcessingAttributes modsec.EnvoyRequestAttributes
+	var evalRequest *modsec.EvalRequest
 	var protectionId uint32
 	defer func() {
-		if evalProcessRequest != nil {
-			s.modsec.DestroyTransaction(evalProcessRequest)
-		}
-		if evalProcessResponse != nil {
-			s.modsec.DestroyTransaction(evalProcessResponse)
+		if evalRequest != nil {
+			s.modsec.DestroyTransaction(evalRequest)
 		}
 	}()
 	for {
@@ -72,26 +67,25 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		}
 		var resp *extproc.ProcessingResponse
 		switch r := req.Request.(type) {
-		// Request Headers Evaluation
+		// Request beaders evaluation
 		case *extproc.ProcessingRequest_RequestHeaders:
-			log.Println("Processing request headers")
+			log.Println("processing request headers")
 			// get protection ID
 			protectionId = s.getProtectionId(r.RequestHeaders.Headers.Headers)
 			if protectionId == 0 {
 				s.logger.Warn("protection id is undefined")
 			}
 			// init eval request
-			envoyProcessingAttributes = modsec.NewEnvoyRequestAttributes(req.Attributes["envoy.filters.http.ext_proc"].GetFields())
-			evalProcessRequest = s.modsec.InitEvalRequest(
-				envoyProcessingAttributes,
+			evalRequest = s.modsec.InitEvalRequest(
+				modsec.NewEnvoyRequestAttributes(req.Attributes["envoy.filters.http.ext_proc"].GetFields()),
 				r.RequestHeaders.Headers.Headers,
 				protectionId,
 			)
 			// process transaction
-			intervened := s.modsec.EvaluateHeaders(evalProcessRequest)
+			intervened := s.modsec.ProcessRequestHeaders(evalRequest)
 			// if intervened, block request
 			if intervened {
-				resp = s.interventionResponse(evalProcessRequest)
+				resp = s.interventionResponse(evalRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestHeaders{
@@ -99,30 +93,13 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 					},
 				}
 			}
-		case *extproc.ProcessingRequest_ResponseHeaders:
-			evalProcessResponse = s.modsec.InitEvalRequest(
-				envoyProcessingAttributes,
-				r.ResponseHeaders.Headers.Headers,
-				protectionId,
-			)
-			// process transaction
-			intervened := s.modsec.EvaluateHeaders(evalProcessResponse)
-			if intervened {
-				resp = s.interventionResponse(evalProcessResponse)
-			} else {
-				resp = &extproc.ProcessingResponse{
-					Response: &extproc.ProcessingResponse_ResponseHeaders{
-						ResponseHeaders: &extproc.HeadersResponse{},
-					},
-				}
-			}
-		// Request Body Evaluation
+		// Request body evaluation
 		case *extproc.ProcessingRequest_RequestBody:
-			log.Println("Processing request body")
-			s.modsec.SetEvalRequestBody(r.RequestBody.String(), evalProcessRequest)
-			intervened := s.modsec.EvaluateBody(evalProcessRequest)
+			log.Println("processing request body")
+			s.modsec.SetRequestBody(r.RequestBody.String(), evalRequest)
+			intervened := s.modsec.ProcessRequestBody(evalRequest)
 			if intervened {
-				resp = s.interventionResponse(evalProcessRequest)
+				resp = s.interventionResponse(evalRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
 					Response: &extproc.ProcessingResponse_RequestBody{
@@ -130,13 +107,33 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 					},
 				}
 			}
-		case *extproc.ProcessingRequest_ResponseBody:
-			resp = &extproc.ProcessingResponse{
-				Response: &extproc.ProcessingResponse_ResponseBody{
-					ResponseBody: &extproc.BodyResponse{},
-				},
+		// Response headers evaluation
+		case *extproc.ProcessingRequest_ResponseHeaders:
+			s.modsec.SetResponseHeaders(r.ResponseHeaders.Headers.Headers, evalRequest)
+			// process transaction
+			intervened := s.modsec.ProcessResponseHeaders(evalRequest)
+			if intervened {
+				resp = s.interventionResponse(evalRequest)
+			} else {
+				resp = &extproc.ProcessingResponse{
+					Response: &extproc.ProcessingResponse_ResponseHeaders{
+						ResponseHeaders: &extproc.HeadersResponse{},
+					},
+				}
 			}
-
+		// Response body evaluation
+		case *extproc.ProcessingRequest_ResponseBody:
+			s.modsec.SetResponseBody(r.ResponseBody.String(), evalRequest)
+			intervened := s.modsec.ProcessRequestBody(evalRequest)
+			if intervened {
+				resp = s.interventionResponse(evalRequest)
+			} else {
+				resp = &extproc.ProcessingResponse{
+					Response: &extproc.ProcessingResponse_ResponseBody{
+						ResponseBody: &extproc.BodyResponse{},
+					},
+				}
+			}
 		}
 
 		if err := stream.Send(resp); err != nil {
