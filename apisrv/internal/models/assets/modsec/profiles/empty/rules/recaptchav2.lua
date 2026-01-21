@@ -4,7 +4,7 @@ local ltn12 = require("ltn12")
 local json = require("cjson")
 
 -- Configuration - store your reCAPTCHA secret key securely
-local RECAPTCHA_SECRET_KEY =  "6Lc7yEssAAAAAKDtgsduoWOdpaGhGNFzg7Ny00de"
+local RECAPTCHA_SECRET_KEY =  "6LcNe1AsAAAAAN85AUjAJ3kp4c0WfIV7XJTEpgxm"
 local RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 
 function main()
@@ -27,11 +27,14 @@ function main()
     local verification_result = verify_recaptcha(recaptcha_token, client_ip)
     if verification_result.success then
         print("reCAPTCHA verification successful for IP: " .. client_ip)
+        -- inform the engine success in captcha verification
         m.setvar("tx.captcha_verified", "1")
         return nil
     else
         print("reCAPTCHA verification failed for IP: " .. client_ip ..
               " Error: " .. (verification_result.error or "Unknown error"))
+        -- inform the engine failure in captcha verification
+        m.setvar("tx.captcha_verified", "2")
         return "reCAPTCHA verification failed"
     end
 end

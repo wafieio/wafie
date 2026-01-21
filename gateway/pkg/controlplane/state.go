@@ -58,6 +58,7 @@ func (s *state) wafieXprocFilter(protection *wv1.Protection) *hcm.HttpFilter {
 				},
 			},
 		},
+		MessageTimeout:   durationpb.New(time.Second * 5),
 		FailureModeAllow: false,
 		ProcessingMode: &extproc.ProcessingMode{
 			RequestHeaderMode:  extproc.ProcessingMode_SEND,

@@ -85,6 +85,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 			intervened := s.modsec.ProcessRequestHeaders(evalRequest)
 			// if intervened, block request
 			if intervened {
+				s.logger.Debug("intervened at request headers processing")
 				resp = s.interventionResponse(evalRequest)
 			} else {
 				resp = &extproc.ProcessingResponse{
@@ -137,6 +138,7 @@ func (s *ExternalProcessor) Process(stream extproc.ExternalProcessor_ProcessServ
 		}
 
 		if err := stream.Send(resp); err != nil {
+			s.logger.Error("error sending response", zap.Error(err))
 			return err
 		}
 	}
@@ -155,10 +157,10 @@ func (s *ExternalProcessor) interventionResponse(evalRequest *modsec.EvalRequest
 				},
 			},
 		},
-		Body: s.assets.BlockPage(),
 	}
 	// enrich with context
 	s.modsec.EnrichWithInterventionContext(evalRequest, immediateResponse, s.assets)
+	s.logger.Debug("sending immediate response")
 	// return optionally enriched response
 	return &extproc.ProcessingResponse{
 		Response: &extproc.ProcessingResponse_ImmediateResponse{
