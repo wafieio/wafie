@@ -21,6 +21,22 @@ type ProtectionRepository struct {
 	Protection Protection
 }
 
+type CaptchaV2 struct {
+	SiteKey     *string `json:"siteKey"`
+	SecretKey   *string `json:"secretKey"`
+	RedirectUrl *string `json:"redirectUrl"`
+	Enabled     *bool   `json:"enabled"`
+}
+
+type AntiBot struct {
+	Enabled          *bool      `json:"enabled"`
+	ResponseStatuses *string    `json:"responseStatuses"`
+	FailThreshold    *uint32    `json:"failThreshold"`
+	FailWindow       *uint32    `json:"failWindow"`
+	BlockPeriod      *uint32    `json:"blockPeriod"`
+	CaptchaV2        *CaptchaV2 `json:"captchaV2"`
+}
+
 type Waf struct {
 	Mode          uint32 `json:"protectionMode"`
 	ParanoiaLevel uint32 `json:"paranoiaLevel"`
@@ -68,6 +84,7 @@ type ProtectionDesiredState struct {
 	XffNumTrustedHops *uint32  `json:"xffNumTrustedHops"`
 	IPRules           *IPRules `json:"ipRules"`
 	Auth              *Auth    `json:"auth"`
+	AntiBot           *AntiBot `json:"antiBot"`
 }
 
 type Protection struct {
@@ -165,6 +182,68 @@ func (s *ProtectionDesiredState) Merge(req *wv1.PutProtectionRequest) {
 			s.Auth.TokenAuth = &TokenAuth{}
 		}
 		s.Auth.TokenAuth.Merge(req.TokenAuth)
+	}
+	// set antibot
+	if s.AntiBot == nil {
+		s.AntiBot = &AntiBot{}
+	}
+	s.AntiBot.Merge(req.AntiBot)
+}
+
+func (b *AntiBot) Merge(req *wv1.AntiBot) {
+	if req == nil {
+		return
+	}
+	if req.Enabled != nil {
+		b.Enabled = req.Enabled
+	} else if b.Enabled == nil {
+		*b.Enabled = false
+	}
+	if req.ResponseStatuses != nil {
+		b.ResponseStatuses = req.ResponseStatuses
+	} else if b.ResponseStatuses == nil {
+		b.ResponseStatuses = ToPtr("^4[0-9]{2}$") // default value
+	}
+	if req.FailThreshold != nil {
+		b.FailThreshold = req.FailThreshold
+	} else if b.FailThreshold == nil {
+		b.FailThreshold = ToPtr(uint32(10)) // default value
+	}
+	if req.FailWindow != nil {
+		b.FailWindow = req.FailWindow
+	} else if b.FailWindow == nil {
+		b.FailWindow = ToPtr(uint32(30)) // default value
+	}
+	if req.BlockPeriod != nil {
+		b.BlockPeriod = req.BlockPeriod
+	} else if b.BlockPeriod == nil {
+		b.BlockPeriod = ToPtr(uint32(60)) // default value
+	}
+	if b.CaptchaV2 == nil {
+		b.CaptchaV2 = &CaptchaV2{}
+	}
+	b.CaptchaV2.Merge(req.CaptchaV2)
+}
+
+func (c *CaptchaV2) Merge(req *wv1.CaptchaV2) {
+	if req == nil {
+		return
+	}
+	if req.Enabled != nil {
+		c.Enabled = req.Enabled
+	} else if c.Enabled == nil {
+		*c.Enabled = false
+	}
+	if req.SiteKey != nil {
+		c.SiteKey = req.SiteKey
+	}
+	if req.SecretKey != nil {
+		c.SecretKey = req.SecretKey
+	}
+	if req.RedirectUrl != nil {
+		c.RedirectUrl = req.RedirectUrl
+	} else if c.RedirectUrl == nil {
+		c.RedirectUrl = ToPtr("/")
 	}
 }
 
@@ -363,7 +442,12 @@ func (f *Waf) FromProto(v1desiredState *wv1.Waf) {
 
 func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 	state := &wv1.ProtectionDesiredState{
-		Auth: &wv1.Auth{BasicAuth: &wv1.BasicAuth{}, TokenAuth: &wv1.TokenAuth{}}}
+		Auth: &wv1.Auth{
+			BasicAuth: &wv1.BasicAuth{},
+			TokenAuth: &wv1.TokenAuth{},
+		},
+		AntiBot: &wv1.AntiBot{CaptchaV2: &wv1.CaptchaV2{}},
+	}
 	// waf
 	if s.Waf != nil {
 		state.Waf = &wv1.Waf{
@@ -387,6 +471,7 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 		}
 		state.IpRules = &wv1.IPRules{Allow: allow, Block: block}
 	}
+	// auth
 	if s.Auth != nil {
 		// basic auth
 		if s.Auth.BasicAuth != nil {
@@ -417,6 +502,19 @@ func (s *ProtectionDesiredState) ToProto() *wv1.ProtectionDesiredState {
 				PathWhitelist: s.Auth.TokenAuth.PathWhitelist,
 				Enabled:       &s.Auth.TokenAuth.Enabled,
 			}
+		}
+	}
+	if s.AntiBot != nil {
+		state.AntiBot.Enabled = s.AntiBot.Enabled
+		state.AntiBot.ResponseStatuses = s.AntiBot.ResponseStatuses
+		state.AntiBot.FailThreshold = s.AntiBot.FailThreshold
+		state.AntiBot.FailWindow = s.AntiBot.FailWindow
+		state.AntiBot.BlockPeriod = s.AntiBot.BlockPeriod
+		if s.AntiBot.CaptchaV2 != nil {
+			state.AntiBot.CaptchaV2.Enabled = s.AntiBot.CaptchaV2.Enabled
+			state.AntiBot.CaptchaV2.SiteKey = s.AntiBot.CaptchaV2.SiteKey
+			state.AntiBot.CaptchaV2.SecretKey = s.AntiBot.CaptchaV2.SecretKey
+			state.AntiBot.CaptchaV2.RedirectUrl = s.AntiBot.CaptchaV2.RedirectUrl
 		}
 	}
 	return state

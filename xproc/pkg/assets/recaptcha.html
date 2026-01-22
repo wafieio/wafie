@@ -167,9 +167,6 @@
     // Global callback functions for reCAPTCHA
     function onRecaptchaSuccess(token) {
         console.log('reCAPTCHA completed successfully');
-        console.log('token: ---------------------- ')
-        console.log(token)
-        console.log('token: ---------------------- ')
         document.getElementById('submit-btn').disabled = false;
         hideError();
     }
@@ -217,15 +214,9 @@
                 },
                 body: 'g-recaptcha-response=' + encodeURIComponent(token)
             });
-            console.log("--------------------------------")
-            console.log(response)
-            console.log("--------------------------------")
             if (response.ok) {
                 // Success - redirect or show success message
                 const result = await response.text();
-                console.log("--------------------------------")
-                console.log(result)
-                console.log("--------------------------------")
                 // Check if response contains redirect instruction
                 if (result.includes('success')) {
                     window.location.href = 'http://httpbin.10.100.102.92.nip.io/get';

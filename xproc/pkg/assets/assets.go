@@ -1,8 +1,12 @@
 package assets
 
 import (
+	"bytes"
 	"embed"
+	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
+	wv1 "github.com/wafieio/wafie/api/gen/wafie/v1"
 	"go.uber.org/zap"
 )
 
@@ -24,9 +28,22 @@ func (a *Assets) BlockPage() []byte {
 	return []byte(a.readAssetAsString(assetName))
 }
 
-func (a *Assets) RecaptchaPage() []byte {
+func (a *Assets) RecaptchaPage(data *wv1.ProtectionDesiredState) []byte {
 	assetName := "recaptcha.html"
-	return []byte(a.readAssetAsString(assetName))
+	tmpl, err := template.New(assetName).
+		Funcs(sprig.FuncMap()).
+		Delims("{{{", "}}}").
+		Parse(a.readAssetAsString(assetName))
+	if err != nil {
+		a.logger.Error(err.Error())
+		return nil
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		a.logger.Error(err.Error())
+		return nil
+	}
+	return buf.Bytes()
 }
 
 func (a *Assets) readAssetAsString(assetName string) string {

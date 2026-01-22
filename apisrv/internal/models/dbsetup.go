@@ -148,3 +148,7 @@ func db() *gorm.DB {
 	}
 	return dbConn
 }
+
+func ToPtr[T any](v T) *T {
+	return &v
+}

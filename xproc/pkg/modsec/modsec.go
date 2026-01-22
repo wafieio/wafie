@@ -51,6 +51,7 @@ type ModeSec struct {
 	protectionClient  wv1c.ProtectionServiceClient
 	ruleSetBaseConfig string
 	auditLogFile      string
+	protectionCache   map[uint32]*wv1.Protection
 }
 
 func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
@@ -62,6 +63,7 @@ func NewModSec(apiAddr string, logger *zap.Logger) *ModeSec {
 		logger:            logger,
 		ruleSetBaseConfig: "/rules",
 		auditLogFile:      "/data/audit/modsec.log", // statically configured, must be the same as in modsecurity.conf
+		protectionCache:   make(map[uint32]*wv1.Protection),
 	}
 	// start the ruleset watcher
 	modSec.runRulesetWatcher()
@@ -130,8 +132,10 @@ func (s *ModeSec) getProtectionRules(id uint32) (*wv1.Protection, error) {
 	if p, err := s.protectionClient.GetProtection(context.Background(), getReq); err != nil {
 		return nil, err
 	} else {
+		s.protectionCache[id] = p.Msg.Protection
 		return p.Msg.Protection, nil
 	}
+
 }
 
 func (s *ModeSec) ruleSetMD5(ruleSets []*wv1.CrsRuleSet) (string, error) {
@@ -470,7 +474,15 @@ func (s *ModeSec) EnrichWithInterventionContext(ev *EvalRequest, r *extproc.Imme
 		case "block":
 			r.Body = a.BlockPage()
 		case "recaptcha":
-			r.Body = a.RecaptchaPage()
+			protectionId := uint32(ev.protection_id)
+			if protection, ok := s.protectionCache[protectionId]; ok {
+				r.Body = a.RecaptchaPage(protection.DesiredState)
+			} else {
+				s.logger.Error("protection id not found in protection cache",
+					zap.Uint32("protection_id", protectionId))
+				r.Body = a.BlockPage()
+			}
+
 		case "recaptchaSuccess":
 			r.Body = []byte(`{"result":"success"}`)
 		case "recaptchaError":

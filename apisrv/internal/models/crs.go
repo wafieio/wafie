@@ -180,8 +180,21 @@ func (r *CRSRepository) ProtectionDesiredState(crsVersionId uint) (*ProtectionDe
 		p.DesiredState.IPRules = &IPRules{}
 	}
 	if p.DesiredState.Auth == nil {
-		p.DesiredState.Auth = &Auth{BasicAuth: &BasicAuth{}, TokenAuth: &TokenAuth{}}
+		p.DesiredState.Auth = &Auth{
+			BasicAuth: &BasicAuth{Enabled: false},
+			TokenAuth: &TokenAuth{Enabled: false},
+		}
 	}
+	if p.DesiredState.Auth.BasicAuth == nil {
+		p.DesiredState.Auth.BasicAuth = &BasicAuth{Enabled: false}
+	}
+	if p.DesiredState.Auth.TokenAuth == nil {
+		p.DesiredState.Auth.TokenAuth = &TokenAuth{Enabled: false}
+	}
+	if p.DesiredState.AntiBot == nil {
+		p.DesiredState.AntiBot = &AntiBot{Enabled: ToPtr(false)}
+	}
+
 	return &p.DesiredState, nil
 }
 

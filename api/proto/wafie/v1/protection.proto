@@ -27,6 +27,22 @@ enum GetProtectionOptionsIncludeCrsRules{
   GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_NONE = 3;
 }
 
+message CaptchaV2 {
+  optional string site_key = 1;
+  optional string secret_key = 2;
+  optional string redirect_url = 3;
+  optional bool enabled = 4;
+}
+
+message AntiBot {
+  optional bool enabled = 1;
+  optional string response_statuses =2;
+  optional uint32 fail_threshold = 3;
+  optional uint32 fail_window = 4;
+  optional uint32 block_period = 5;
+  optional CaptchaV2 captcha_v2 = 6;
+}
+
 message BasicAuthUser {
   string user = 1;
   string pass = 2;
@@ -94,6 +110,7 @@ message ProtectionDesiredState {
   optional uint32  xff_num_trusted_hops = 2;
   optional IPRules ip_rules = 3;
   optional Auth auth = 4;
+  optional AntiBot anti_bot = 5;
 }
 
 message Protection {
@@ -138,6 +155,7 @@ message PutProtectionRequest {
   optional IPRules ip_rules_to_remove = 6;
   optional BasicAuthPutRequest basic_auth = 7;
   optional TokenAuthPutRequest token_auth = 9;
+  optional AntiBot anti_bot = 10;
 
 }
 
