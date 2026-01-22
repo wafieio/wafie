@@ -135,7 +135,7 @@
         <div class="form-container">
             <div class="recaptcha-container">
                 <div class="g-recaptcha"
-                     data-sitekey="6LcNe1AsAAAAAJvsGyjHacFw48phY1hVsaalkmi8"
+                     data-sitekey="{{{.AntiBot.CaptchaV2.SiteKey}}}"
                      data-callback="onRecaptchaSuccess"
                      data-expired-callback="onRecaptchaExpired"
                      data-error-callback="onRecaptchaError">
@@ -219,7 +219,7 @@
                 const result = await response.text();
                 // Check if response contains redirect instruction
                 if (result.includes('success')) {
-                    window.location.href = 'http://httpbin.10.100.102.92.nip.io/get';
+                    window.location.href = '{{{.AntiBot.CaptchaV2.RedirectUrl}}}';
                 } else {
                     showError('Verification failed. Please try again.');
                     resetForm();

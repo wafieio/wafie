@@ -4,7 +4,7 @@ local ltn12 = require("ltn12")
 local json = require("cjson")
 
 -- Configuration - store your reCAPTCHA secret key securely
-local RECAPTCHA_SECRET_KEY =  "6LcNe1AsAAAAAN85AUjAJ3kp4c0WfIV7XJTEpgxm"
+local RECAPTCHA_SECRET_KEY =  "{{{ .AntiBot.CaptchaV2.SecretKey }}}"
 local RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 
 function main()
