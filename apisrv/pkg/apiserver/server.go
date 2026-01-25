@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	connectcors "connectrpc.com/cors"
 	"connectrpc.com/grpchealth"
 	"connectrpc.com/grpcreflect"
+	"github.com/rs/cors"
 	v1 "github.com/wafieio/wafie/api/gen/wafie/v1/wafiev1connect"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -26,12 +28,28 @@ func (s *ApiServer) Start() {
 	mux := http.NewServeMux()
 	s.enableReflection(mux)
 	s.registerHandlers(mux)
+	handler := s.cors(mux)
 	go func() {
-		if err := http.ListenAndServe(":8080", h2c.NewHandler(mux, &http2.Server{})); err != nil {
+		if err := http.ListenAndServe(":8080", h2c.NewHandler(handler, &http2.Server{})); err != nil {
 			s.logger.Error("failed to start API server", zap.Error(err))
 		}
 	}()
 	s.logger.Info("server running on 0.0.0.0:8080")
+}
+
+func (s *ApiServer) cors(mux *http.ServeMux) http.Handler {
+	// Add Authorization header to the allowed headers for auth support
+	allowedHeaders := append(connectcors.AllowedHeaders(), "Authorization")
+
+	middleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5174", "https://localhost:5174"},
+		AllowedMethods:   connectcors.AllowedMethods(),
+		AllowedHeaders:   allowedHeaders,
+		ExposedHeaders:   connectcors.ExposedHeaders(),
+		AllowCredentials: true, // Required for Authorization headers
+		MaxAge:           7200, // Cache preflight for 2 hours
+	})
+	return middleware.Handler(mux)
 }
 
 func (s *ApiServer) registerHandlers(mux *http.ServeMux) {
