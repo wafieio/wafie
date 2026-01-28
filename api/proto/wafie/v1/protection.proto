@@ -36,7 +36,7 @@ message CaptchaV2 {
 
 message AntiBot {
   optional bool enabled = 1;
-  optional string response_statuses =2;
+  optional string response_statuses = 2;
   optional uint32 fail_threshold = 3;
   optional uint32 fail_window = 4;
   optional uint32 block_period = 5;
@@ -124,8 +124,6 @@ message Protection {
 
 message CreateProtectionRequest {
   uint32 application_id = 1;
-  ProtectionMode protection_mode = 2;
-  ProtectionDesiredState desired_state = 3;
 }
 
 message CreateProtectionResponse {
@@ -137,8 +135,9 @@ message GetProtectionOptions {
 }
 
 message GetProtectionRequest {
-  uint32 id = 1;
-  optional GetProtectionOptions options = 2;
+  optional uint32 id = 1;
+  optional uint32 application_id = 2;
+  optional GetProtectionOptions options = 3;
 }
 
 

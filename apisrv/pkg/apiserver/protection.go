@@ -29,7 +29,7 @@ func (s *ProtectionService) CreateProtection(
 	l.Info("creating new protection entry")
 	defer l.Info("protection entry created")
 	repo := models.NewProtectionRepository(nil, l)
-	protection, err := repo.CreateProtection(req.Msg)
+	protection, err := repo.UpsertProtection(req.Msg)
 	if err != nil {
 		l.Error("failed to create protection entry", zap.Error(err))
 		return connect.NewResponse(&wv1.CreateProtectionResponse{}), connect.NewError(connect.CodeInternal, err)
@@ -43,11 +43,11 @@ func (s *ProtectionService) GetProtection(
 	ctx context.Context,
 	req *connect.Request[wv1.GetProtectionRequest]) (
 	*connect.Response[wv1.GetProtectionResponse], error) {
-	l := s.logger.With(zap.Uint32("protectionId", req.Msg.Id))
+	l := s.logger.With(zap.Uint32("protectionId", *req.Msg.Id))
 	l.Info("getting protection entry")
 	defer l.Info("protection entry retrieved")
 	repo := models.NewProtectionRepository(nil, l)
-	protection, err := repo.GetProtection(uint(req.Msg.GetId()), req.Msg.GetOptions())
+	protection, err := repo.GetProtection(req.Msg.Id, req.Msg.ApplicationId, req.Msg.GetOptions())
 	if err != nil {
 		l.Error("failed to get protection entry", zap.Error(err))
 		return connect.NewResponse(&wv1.GetProtectionResponse{}), err

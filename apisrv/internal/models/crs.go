@@ -264,6 +264,7 @@ func (s *CrsRuleSet) Render(data *ProtectionDesiredState) (renderedCrsRules stri
 	if err != nil {
 		return "", err
 	}
+
 	var buf bytes.Buffer
 	if err = tmpl.Execute(&buf, data); err != nil {
 		return "", err

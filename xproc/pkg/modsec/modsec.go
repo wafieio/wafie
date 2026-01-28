@@ -124,7 +124,7 @@ func (s *ModeSec) listProtections() []*wv1.Protection {
 func (s *ModeSec) getProtectionRules(id uint32) (*wv1.Protection, error) {
 	activeRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ACTIVE
 	getReq := connect.NewRequest(&wv1.GetProtectionRequest{
-		Id: id,
+		Id: &id,
 		Options: &wv1.GetProtectionOptions{
 			IncludeCrsRules: &activeRules,
 		},
@@ -276,6 +276,7 @@ func (s *ModeSec) runRulesetWatcher() {
 					continue
 				}
 				if rules.CrsVersions == nil {
+					s.logger.Info("crsVersions is nil", zap.Uint32("protectionId", p.Id))
 					continue
 				}
 				if len(rules.CrsVersions) != 1 {
@@ -284,6 +285,7 @@ func (s *ModeSec) runRulesetWatcher() {
 					continue
 				}
 				if len(rules.CrsVersions[0].CrsRuleSets) == 0 {
+					s.logger.Info("got no active rule set", zap.Uint32("protectionId", p.Id))
 					continue
 				}
 				// calculate rule set md5

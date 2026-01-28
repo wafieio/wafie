@@ -562,21 +562,44 @@ func (p *Protection) AfterCreate(tx *gorm.DB) error {
 	return crsRepo.CloneCrsProfileToCrsRuleSet(DefaultCRSProfileName, crsVersion.ID)
 }
 
-func (s *ProtectionRepository) CreateProtection(req *wv1.CreateProtectionRequest) (*Protection, error) {
+func (s *ProtectionRepository) UpsertProtection(req *wv1.CreateProtectionRequest) (*Protection, error) {
 	protection := &Protection{
 		ApplicationID: uint(req.ApplicationId),
-		Mode:          uint32(req.ProtectionMode),
+		Mode:          uint32(wv1.ProtectionMode_PROTECTION_MODE_ON),
 	}
-	protection.DesiredState.FromProto(req.DesiredState)
-	if err := s.db.Create(protection).Error; err != nil {
-		return nil, err
+
+	// Try to find existing protection first
+	existing := &Protection{}
+	err := s.db.Where("application_id = ?", protection.ApplicationID).First(existing).Error
+
+	if err == nil {
+		// Protection exists, update it
+		existing.Mode = protection.Mode
+		if err := s.db.Save(existing).Error; err != nil {
+			return nil, err
+		}
+		return existing, nil
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		// Protection doesn't exist, create it
+		if err := s.db.Create(protection).Error; err != nil {
+			return nil, err
+		}
+		return protection, nil
 	}
-	return protection, nil
+
+	// Some other error occurred
+	return nil, err
 }
 
-func (s *ProtectionRepository) GetProtection(id uint, options *wv1.GetProtectionOptions) (*Protection, error) {
+func (s *ProtectionRepository) GetProtection(id *uint32, appId *uint32, options *wv1.GetProtectionOptions) (*Protection, error) {
 	p := &Protection{}
-	query := s.db.Model(&Protection{}).Where("id = ?", id)
+	query := s.db.Model(&Protection{})
+	if id != nil {
+		query = query.Where("id = ?", id)
+	}
+	if appId != nil {
+		query = query.Where("application_id = ?", appId)
+	}
 	allRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ALL
 	activeRules := wv1.GetProtectionOptionsIncludeCrsRules_GET_PROTECTION_OPTIONS_INCLUDE_CRS_RULES_ACTIVE
 	if options != nil && options.IncludeCrsRules != nil {
@@ -630,7 +653,8 @@ func (s *ProtectionRepository) UpdateProtection(req *wv1.PutProtectionRequest) (
 	if res.RowsAffected == 0 {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("protection id not found"))
 	}
-	return s.GetProtection(protection.ID, nil)
+	protectionId := uint32(protection.ID)
+	return s.GetProtection(&protectionId, nil, nil)
 }
 
 func (s *ProtectionRepository) ListProtections(options *wv1.ListProtectionsOptions) ([]*Protection, error) {

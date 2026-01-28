@@ -10,12 +10,11 @@ api:
       -o .bin/api-server apisrv/cmd/apiserver/main.go
 
 api.image:
-	podman manifest rm api --ignore
-	podman build \
-      --manifest api \
-      --platform linux/arm64,linux/amd64 \
-      -f apisrv/Containerfile .
-	podman manifest push api $(REGISTRY)/api:latest
+	docker buildx build \
+	--platform linux/arm64,linux/amd64 \
+	--push \
+	-t $(REGISTRY)/api:latest \
+	-f apisrv/Containerfile .
 
 # gateway build
 .PHONY: gateway
@@ -37,13 +36,11 @@ xproc:
 	go build -o .bin/xproc xproc/cmd/main.go
 
 xproc.image:
-	podman manifest rm xproc --ignore
-	podman build \
-        --manifest xproc \
-        --platform linux/arm64,linux/amd64 \
-        -f xproc/Containerfile .
-	podman manifest push xproc $(REGISTRY)/xproc:latest
-
+	docker buildx build \
+	--platform linux/arm64,linux/amd64 \
+	--push \
+	-t $(REGISTRY)/xproc:latest \
+	-f xproc/Containerfile .
 
 .PHONY: discovery
 discovery:

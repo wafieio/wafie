@@ -65,8 +65,8 @@ Deploy wafie helm chart
 helm repo add wafie https://charts.wafie.io
 helm repo update 
 helm upgrade -i wafie wafie/wafie \
-  --set api.ingress.host=wafie-api.$(ipconfig getifaddr en0).nip.io \
-  --set console.ingress.host=wafie-console.$(ipconfig getifaddr en0).nip.io \
+  --set api.ingress.host=wafie-api.$(colima ls | awk '{print $8}' | tail -1).nip.io \
+  --set console.ingress.host=wafie-console.$(colima ls | awk '{print $8}' | tail -1).nip.io \
   --set api.ingress.tls=false \
   --set console.ingress.tls=false 
 ```
