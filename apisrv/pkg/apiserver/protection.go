@@ -43,7 +43,14 @@ func (s *ProtectionService) GetProtection(
 	ctx context.Context,
 	req *connect.Request[wv1.GetProtectionRequest]) (
 	*connect.Response[wv1.GetProtectionResponse], error) {
-	l := s.logger.With(zap.Uint32("protectionId", *req.Msg.Id))
+	var logContextFields []zap.Field
+	if req.Msg.Id != nil {
+		logContextFields = append(logContextFields, zap.Uint32("protectionId", *req.Msg.Id))
+
+	} else if req.Msg.ApplicationId != nil {
+		logContextFields = append(logContextFields, zap.Uint32("appId", *req.Msg.ApplicationId))
+	}
+	l := s.logger.With(logContextFields...)
 	l.Info("getting protection entry")
 	defer l.Info("protection entry retrieved")
 	repo := models.NewProtectionRepository(nil, l)
