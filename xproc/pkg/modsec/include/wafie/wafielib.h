@@ -53,4 +53,6 @@ int wafie_process_response_headers(WafieEvaluationRequest *request);
 
 int wafie_process_response_body(WafieEvaluationRequest *request);
 
+char *wafie_get_header(WafieEvaluationRequest const *request, const char *header_name);
+
 #endif //WAFIELIB_LIBRARY_H

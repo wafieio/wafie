@@ -28,6 +28,7 @@ message ListEventsRequest {
   optional string client_ip = 5;
   optional uint32 limit = 6;
   optional uint32 offset = 7;
+  optional string request_uri = 8;
 }
 
 // ListEventsResponse - paginated list of events

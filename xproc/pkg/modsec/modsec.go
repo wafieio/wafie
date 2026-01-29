@@ -35,15 +35,19 @@ import (
 )
 
 const (
-	InterventionContextKey                = "sys?"
-	InterventionContextKeyBasicAuthHeader = "basicAuthHeader"
-	InterventionContextKeyStatus          = "status"
-	InterventionContextBody               = "body"
+	InterventionContextKey                  = "sys?"
+	InterventionContextKeyBasicAuthHeader   = "basicAuthHeader"
+	InterventionContextKeyStatus            = "status"
+	InterventionContextAction               = "action"
+	InterventionContextCaseBlock            = "block"
+	InterventionContextCaseRecaptcha        = "recaptcha"
+	InterventionContextCaseRecaptchaSuccess = "recaptchaSuccess"
+	InterventionContextCaseRecaptchaError   = "recaptchaError"
+	InterventionContextCaseHeaderCheck      = "headerCheck"
 )
 
 type EvalRequest C.WafieEvaluationRequest
 type RuleSetConfig C.WafieRuleSetConfig
-
 type EnvoyRequestAttributes map[string]string
 
 type ModeSec struct {
@@ -472,10 +476,10 @@ func (s *ModeSec) EnrichWithInterventionContext(ev *EvalRequest, r *extproc.Imme
 			r.Status = &typev3.HttpStatus{Code: typev3.StatusCode(i)}
 		}
 
-		switch params.Get(InterventionContextBody) {
-		case "block":
+		switch params.Get(InterventionContextAction) {
+		case InterventionContextCaseBlock:
 			r.Body = a.BlockPage()
-		case "recaptcha":
+		case InterventionContextCaseRecaptcha:
 			protectionId := uint32(ev.protection_id)
 			if protection, ok := s.protectionCache[protectionId]; ok {
 				r.Body = a.RecaptchaPage(protection.DesiredState)
@@ -484,11 +488,16 @@ func (s *ModeSec) EnrichWithInterventionContext(ev *EvalRequest, r *extproc.Imme
 					zap.Uint32("protection_id", protectionId))
 				r.Body = a.BlockPage()
 			}
-
-		case "recaptchaSuccess":
+		case InterventionContextCaseRecaptchaSuccess:
 			r.Body = []byte(`{"result":"success"}`)
-		case "recaptchaError":
+		case InterventionContextCaseRecaptchaError:
 			r.Body = []byte(`{"result":"error"}`)
+		case InterventionContextCaseHeaderCheck:
+			headerName := C.CString(params.Get("headerName"))
+			defer C.free(unsafe.Pointer(headerName))
+			hVal := C.GoString(C.wafie_get_header((*C.WafieEvaluationRequest)(ev), headerName))
+			x := []byte(fmt.Sprintf(`{"%s":"%s"}`, params.Get("headerName"), hVal))
+			r.Body = x
 		default:
 			r.Body = a.BlockPage()
 		}
