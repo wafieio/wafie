@@ -62,6 +62,7 @@ message Ingress {
   DiscoveryStatusType discovery_status = 8;
   string discovery_message = 9;
   optional Upstream upstream = 10;
+  string scheme = 11;
 }
 
 message Port  {

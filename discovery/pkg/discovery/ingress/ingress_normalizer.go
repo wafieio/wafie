@@ -63,6 +63,7 @@ func (i *ingress) normalize(obj *unstructured.Unstructured) (createRouteReq *wv1
 			Port:            80, // TODO: add support for TLS passthroughs and other protocols later on
 			Path:            k8sIngress.Spec.Rules[0].HTTP.Paths[0].Path,
 			Host:            k8sIngress.Spec.Rules[0].Host,
+			Scheme:          i.discoverScheme(k8sIngress),
 			IngressType:     wv1.IngressType_INGRESS_TYPE_NGINX,
 			DiscoveryStatus: wv1.DiscoveryStatusType_DISCOVERY_STATUS_TYPE_SUCCESS,
 		}
@@ -141,4 +142,11 @@ func (i *ingress) discoverContainerPorts(ing *v1.Ingress, ports *[]*wv1.Port) er
 		})
 	}
 	return nil
+}
+
+func (i *ingress) discoverScheme(ing *v1.Ingress) string {
+	if ing.Spec.TLS != nil {
+		return "https"
+	}
+	return "http"
 }

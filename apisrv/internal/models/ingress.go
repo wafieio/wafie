@@ -34,6 +34,7 @@ type Ingress struct {
 	Name             string
 	Namespace        string
 	Host             string `gorm:"uniqueIndex:idx_ing_host"`
+	Scheme           string
 	Port             int32
 	Path             string
 	ApplicationID    uint        `gorm:"not null"`
@@ -53,6 +54,7 @@ func NewIngressFromProto(ingReq *wv1.Ingress) *Ingress {
 		Namespace:        ingReq.Namespace,
 		Path:             ingReq.Path,
 		Host:             ingReq.Host,
+		Scheme:           ingReq.Scheme,
 		Port:             ingReq.Port,
 		IngressType:      uint32(ingReq.IngressType),
 		ApplicationID:    uint(ingReq.ApplicationId),
@@ -70,6 +72,7 @@ func (s *IngressRepository) Save(ingress *Ingress) error {
 				"namespace",
 				"path",
 				"port",
+				"scheme",
 				"ingress_type",
 				"discovery_message",
 				"discovery_status",
@@ -89,6 +92,7 @@ func (i *Ingress) ToProto() *wv1.Ingress {
 		Namespace:        i.Namespace,
 		Path:             i.Path,
 		Host:             i.Host,
+		Scheme:           i.Scheme,
 		IngressType:      wv1.IngressType(i.IngressType),
 		DiscoveryMessage: i.DiscoveryMessage,
 		DiscoveryStatus:  wv1.DiscoveryStatusType(i.DiscoveryStatus),
