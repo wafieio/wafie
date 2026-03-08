@@ -1,5 +1,7 @@
 # Wafie - AI ready, Kubernetes native WAF and API protection platform
 
+![Application Overview](ops/screenshots/app-overview.png)
+
 ## Why? 
 The core mission of Wafie is to accomplish a very different and broad set of application networking (L7) tasks
 in a simple, fast, and scalable manner. A wide variety of functions, including basic security controls, 
@@ -33,6 +35,7 @@ server acting as a glue between libmodsecurity and envoy proxy
 * **wafie:api** - api server
 
 
+---
 
 # Installation
 
@@ -134,8 +137,6 @@ helm status wafie
 # Get release values
 helm get values wafie
 ```
-
----
 
 ## Production Deployment Example
 
@@ -304,4 +305,37 @@ Install with the custom values file:
 helm install wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2 \
   -f custom-values.yaml
 ```
+
+
+## UI Screenshots
+
+### Automatic Service Discovery
+Wafie automatically discovers your Kubernetes services and ingresses, making deployment seamless.
+
+![Discovery](ops/screenshots/discovery.png)
+
+### Proxy Configuration
+Configure advanced proxy settings and routing rules with an intuitive interface.
+
+![Proxy Configuration](ops/screenshots/proxy-cfg.png)
+
+### Basic Authentication
+Easily set up basic authentication for your applications without code changes.
+
+![Basic Authentication](ops/screenshots/basic-auth.png)
+
+### Token-Based Authentication
+Implement token-based authentication and API key management.
+
+![Token Authentication](ops/screenshots/token-auth.png)
+
+### IP-Based Access Control
+Define IP allowlists and blocklists to control access to your applications.
+
+![IP Rules](ops/screenshots/ip-rule.png)
+
+### Anti-Bot Protection
+Protect your applications from bots with built-in CAPTCHA and challenge mechanisms.
+
+![Anti-Bot Protection](ops/screenshots/antibot.png)
 
