@@ -3,7 +3,7 @@ api:
   image: wafieio/api:latest
   ingress:
     enabled: true
-    tls: true
+    tls: false
     host: ""
     annotations: {}
     secretName: wafie-api-certs
@@ -31,7 +31,7 @@ console:
   image: wafieio/wafie-console:latest
   ingress:
     enabled: true
-    tls: true
+    tls: false
     host: ""
     annotations: {}
     secretName: wafie-console-certs
