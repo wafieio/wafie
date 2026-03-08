@@ -42,8 +42,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/api:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/api:${{ steps.chart_version.outputs.version }}
+            wafieio/api:latest
+            wafieio/api:${{ steps.chart_version.outputs.version }}
 
       - name: Build and push Gateway image
         uses: docker/build-push-action@v5
@@ -53,8 +53,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/gateway:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/gateway:${{ steps.chart_version.outputs.version }}
+            wafieio/gateway:latest
+            wafieio/gateway:${{ steps.chart_version.outputs.version }}
 
       - name: Build and push XProc image
         uses: docker/build-push-action@v5
@@ -64,8 +64,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/xproc:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/xproc:${{ steps.chart_version.outputs.version }}
+            wafieio/xproc:latest
+            wafieio/xproc:${{ steps.chart_version.outputs.version }}
 
       - name: Build and push Relay image
         uses: docker/build-push-action@v5
@@ -75,8 +75,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/relay:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/relay:${{ steps.chart_version.outputs.version }}
+            wafieio/relay:latest
+            wafieio/relay:${{ steps.chart_version.outputs.version }}
 
   helm:
     needs: build
