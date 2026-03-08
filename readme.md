@@ -1,3 +1,39 @@
+# Wafie - AI ready, Kubernetes native WAF and API protection platform
+
+## Why? 
+The core mission of Wafie is to accomplish a very different and broad set of application networking (L7) tasks
+in a simple, fast, and scalable manner. A wide variety of functions, including basic security controls, 
+access management, rate limiting, and request/response transformation, can be performed.
+
+## For who?
+If you are a Developer/DevOps/SRE/Platform engineer who runs workloads on Kubernetes cluster
+and looking for unified middleware to manage applications L7 networking 
+and security without changing the existing code-base, Wafie can help you with that.
+
+## How?
+* **Kubernetes-Native**: Designed from the ground up to leverage Kubernetes primitives for configuration, 
+integration, and deployment, making it seamless for cloud-native teams
+* **AI-Ready**: Simply describe the desired functionality in plain English 
+once the Wafie agent is connected to the model, and the Wafie engine will handle the rest.
+* **Unified Platform**: Serving as a single control point for security (WAF), 
+traffic management (proxies), and modern API gateway functionality (API protection), 
+eliminating the need to "jungle" multiple disparate tools.
+
+## Wafie components
+* **libmodsecurity** - The core component, [libmodsecurity](https://github.com/owasp-modsecurity/ModSecurity), 
+is a firewall engine that processes CRS rules. 
+These rules are defined in SecLang, a language easily understood by any AI agent. 
+This synergy means that humans can express security or networking requirements in plain English, 
+and an AI agent can seamlessly translate them into SecLang for the libmodsecurity engine to execute.
+* **envoy** - the cloud native proxy server
+* **wafie:ext_proc** - [envoy external processing](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter)
+server acting as a glue between libmodsecurity and envoy proxy
+* **wafie:discovery** - discovery agent that watch for your K8s Ingress and Service and automatically generating Envoy control plane configurations
+* **wafie:relay** - proxying applications traffic without a need for sidecars containers.
+* **wafie:api** - api server
+
+
+
 # Installations steps
 
 ### [Production Deployment](#production-deployment) 

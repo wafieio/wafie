@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build:
     if: contains(github.event.head_commit.message, 'release')
@@ -34,7 +38,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Check if API image exists
+        id: check_api
+        run: |
+          if docker manifest inspect wafieio/api:${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "API image wafieio/api:${{ steps.chart_version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "API image wafieio/api:${{ steps.chart_version.outputs.version }} does not exist, will build"
+          fi
+
       - name: Build and push API image
+        if: steps.check_api.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -45,7 +61,19 @@ jobs:
             wafieio/api:latest
             wafieio/api:${{ steps.chart_version.outputs.version }}
 
+      - name: Check if Gateway image exists
+        id: check_gateway
+        run: |
+          if docker manifest inspect wafieio/gateway:${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Gateway image wafieio/gateway:${{ steps.chart_version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Gateway image wafieio/gateway:${{ steps.chart_version.outputs.version }} does not exist, will build"
+          fi
+
       - name: Build and push Gateway image
+        if: steps.check_gateway.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -56,7 +84,19 @@ jobs:
             wafieio/gateway:latest
             wafieio/gateway:${{ steps.chart_version.outputs.version }}
 
+      - name: Check if XProc image exists
+        id: check_xproc
+        run: |
+          if docker manifest inspect wafieio/xproc:${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "XProc image wafieio/xproc:${{ steps.chart_version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "XProc image wafieio/xproc:${{ steps.chart_version.outputs.version }} does not exist, will build"
+          fi
+
       - name: Build and push XProc image
+        if: steps.check_xproc.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -67,7 +107,19 @@ jobs:
             wafieio/xproc:latest
             wafieio/xproc:${{ steps.chart_version.outputs.version }}
 
+      - name: Check if Relay image exists
+        id: check_relay
+        run: |
+          if docker manifest inspect wafieio/relay:${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Relay image wafieio/relay:${{ steps.chart_version.outputs.version }} already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Relay image wafieio/relay:${{ steps.chart_version.outputs.version }} does not exist, will build"
+          fi
+
       - name: Build and push Relay image
+        if: steps.check_relay.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -99,12 +151,27 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view v${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.chart_version.outputs.version }} already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release v${{ steps.chart_version.outputs.version }} does not exist, will create"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Package Helm chart
+        if: steps.check_release.outputs.exists == 'false'
         run: |
           helm package chart
           echo "Packaged: wafie-${{ steps.chart_version.outputs.version }}.tgz"
 
       - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.chart_version.outputs.version }}
