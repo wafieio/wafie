@@ -73,11 +73,6 @@ https://github.com/wafieio/wafie/pkgs/container/charts%2Fwafie
 ### View on GitHub Releases
 https://github.com/wafieio/wafie/releases
 
-### Using API
-```bash
-curl -s https://ghcr.io/v2/wafieio/charts/wafie/tags/list | jq -r '.tags[]'
-```
-
 ## Upgrading the Chart
 
 ### Upgrade to Latest Version
@@ -153,8 +148,7 @@ helm install wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2 \
   --set console.ingress.host="wafie-console.stg.wafie.io" \
   --set console.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod
 ```
-
-## Local Development Deployment
+ 
 
 ### Local Dev Deployment Setup
 ```bash
@@ -174,40 +168,140 @@ nodes:
 EOF
 ```
 
-kubectl create -f [nginx-ingress.yaml](ops/kind/nginx-ingress.yaml)
 ### Deploy Nginx Ingress Controller from [nginx-ingress.yaml](ops/kind/nginx-ingress.yaml)
 ```bash
 kubectl create -f ops/kind/nginx-ingress.yaml
 ```
 
-For being able to access the services from valid URL, export your IP address
-
-Deploy sample application. 
-Note the `ingress.hostname` show include your local IP address.
-```bash 
-helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
-  --set image.repository=bitnamilegacy/wordpress \
-  --set mariadb.image.repository=bitnamilegacy/mariadb \
-  --set global.security.allowInsecureImages=true \
-  --set ingress.enabled=true \
-  --set ingress.hostname=wp.$(ipconfig getifaddr en0).nip.io \
-  --set service.type=ClusterIP
-```
-
-Once deployed, try access `http://wp.$(ipconfig getifaddr en0).nip.io`
-You should get WordPress website. 
-
-Deploy wafie helm chart
-```bash
-helm install wafie oci://ghcr.io/wafieio/charts/wafie \
-  --set api.ingress.host=wafie-api.$(ipconfig getifaddr en0).nip.io \
-  --set console.ingress.host=wafie-console.$(ipconfig getifaddr en0).nip.io \
-  --set api.ingress.tls=false \
-  --set console.ingress.tls=false
-```
-
-Check all wafie pods are running 
+Check all wafie pods are running
 ```bash
 kubectl get pods -l 'app in (wafie-relay,appsecgw,wafie-control-plane)'
+```
+
+---
+
+## Configuration Parameters
+
+The following table lists the configurable parameters of the Wafie chart and their default values.
+
+### API (Control Plane)
+
+| Parameter                 | Description                   | Default              |
+|---------------------------|-------------------------------|----------------------|
+| `api.image`               | API server container image    | `wafieio/api:latest` |
+| `api.ingress.enabled`     | Enable ingress for API server | `true`               |
+| `api.ingress.tls`         | Enable TLS for API ingress    | `true`               |
+| `api.ingress.host`        | Hostname for API server       | `""`                 |
+| `api.ingress.annotations` | Ingress annotations           | `{}`                 |
+| `api.ingress.secretName`  | TLS secret name               | `wafie-api-certs`    |
+| `api.ingress.class`       | Ingress class name            | `nginx`              |
+| `api.svc.name`            | API service name              | `wafie-api`          |
+| `api.svc.port`            | API service port              | `80`                 |
+
+### Discovery Agent
+
+| Parameter              | Description                     | Default              |
+|------------------------|---------------------------------|----------------------|
+| `discoveryAgent.image` | Discovery agent container image | `wafieio/api:latest` |
+
+### Gateway
+
+| Parameter       | Description                        | Default                    |
+|-----------------|------------------------------------|----------------------------|
+| `gateway.ads`   | Gateway ADS container image        | `wafieio/gateway:latest`   |
+| `gateway.proxy` | Envoy proxy container image        | `envoyproxy/envoy:v1.36.2` |
+| `gateway.xproc` | External processor container image | `wafieio/xproc:latest`     |
+
+### Relay
+
+| Parameter     | Description           | Default                |
+|---------------|-----------------------|------------------------|
+| `relay.image` | Relay container image | `wafieio/relay:latest` |
+
+### Console
+
+| Parameter                     | Description                    | Default                        |
+|-------------------------------|--------------------------------|--------------------------------|
+| `console.enabled`             | Enable console deployment      | `true`                         |
+| `console.image`               | Console container image        | `wafieio/wafie-console:latest` |
+| `console.ingress.enabled`     | Enable ingress for console     | `true`                         |
+| `console.ingress.tls`         | Enable TLS for console ingress | `true`                         |
+| `console.ingress.host`        | Hostname for console           | `""`                           |
+| `console.ingress.annotations` | Ingress annotations            | `{}`                           |
+| `console.ingress.secretName`  | TLS secret name                | `wafie-console-certs`          |
+| `console.ingress.class`       | Ingress class name             | `nginx`                        |
+
+### PostgreSQL
+
+| Parameter                                        | Description                              | Default                           |
+|--------------------------------------------------|------------------------------------------|-----------------------------------|
+| `postgresql.enabled`                             | Enable PostgreSQL deployment             | `true` (via dependency condition) |
+| `postgresql.global.security.allowInsecureImages` | Allow insecure images                    | `true`                            |
+| `postgresql.image.repository`                    | PostgreSQL image repository              | `bitnamilegacy/postgresql`        |
+| `postgresql.auth.postgresPassword`               | PostgreSQL admin password                | `cwafpg`                          |
+| `postgresql.auth.username`                       | Database username                        | `cwafpg`                          |
+| `postgresql.auth.password`                       | Database password                        | `cwafpg`                          |
+| `postgresql.auth.database`                       | Database name                            | `cwaf`                            |
+| `postgresql.primary.persistence.size`            | Persistent volume size                   | `20Gi`                            |
+| `postgresql.volumePermissions.enabled`           | Enable volume permissions init container | `false`                           |
+
+### Example: Override Values with --set
+
+```bash
+helm install wafie oci://ghcr.io/wafieio/charts/wafie \
+  --set api.image=wafieio/api:0.0.2 \
+  --set gateway.proxy=envoyproxy/envoy:v1.37.0 \
+  --set postgresql.auth.postgresPassword=mySecurePassword \
+  --set postgresql.primary.persistence.size=50Gi
+```
+
+### Example: Override Values with values.yaml
+
+Create a custom values file:
+
+```yaml
+# custom-values.yaml
+api:
+  image: wafieio/api:0.0.2
+  ingress:
+    host: "wafie-api.example.com"
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+console:
+  enabled: true
+  image: wafieio/wafie-console:0.0.2
+  ingress:
+    host: "wafie-console.example.com"
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+gateway:
+  ads: wafieio/gateway:0.0.2
+  proxy: envoyproxy/envoy:v1.37.0
+  xproc: wafieio/xproc:0.0.2
+
+relay:
+  image: wafieio/relay:0.0.2
+
+postgresql:
+  auth:
+    postgresPassword: "mySecurePassword"
+    username: "wafie_user"
+    password: "userPassword"
+    database: "wafie_db"
+  primary:
+    persistence:
+      size: 50Gi
+```
+
+Install with the custom values file:
+
+```bash
+helm install wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2 \
+  -f custom-values.yaml
 ```
 
