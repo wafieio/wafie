@@ -151,6 +151,9 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Check if release exists
         id: check_release
         run: |
@@ -164,11 +167,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if Helm chart exists in GHCR
+        id: check_helm_oci
+        run: |
+          if helm pull oci://ghcr.io/${{ github.repository_owner }}/charts/wafie --version ${{ steps.chart_version.outputs.version }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Helm chart wafie:${{ steps.chart_version.outputs.version }} already exists in GHCR, skipping push"
+            rm -f wafie-${{ steps.chart_version.outputs.version }}.tgz
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Helm chart wafie:${{ steps.chart_version.outputs.version }} does not exist in GHCR, will push"
+          fi
+
       - name: Package Helm chart
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           helm package chart
           echo "Packaged: wafie-${{ steps.chart_version.outputs.version }}.tgz"
+
+      - name: Push Helm chart to GHCR
+        if: steps.check_helm_oci.outputs.exists == 'false'
+        run: |
+          helm push wafie-${{ steps.chart_version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          echo "Pushed Helm chart to oci://ghcr.io/${{ github.repository_owner }}/charts/wafie:${{ steps.chart_version.outputs.version }}"
 
       - name: Create GitHub Release
         if: steps.check_release.outputs.exists == 'false'
