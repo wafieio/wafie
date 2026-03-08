@@ -34,28 +34,129 @@ server acting as a glue between libmodsecurity and envoy proxy
 
 
 
-# Installations steps
+# Installation
 
-### [Production Deployment](#production-deployment) 
+## Prerequisites
+- Kubernetes cluster (1.19+)
+- Helm 3.8+
+- kubectl configured to access your cluster
+
+## Installing the Helm Chart
+
+### Install Latest Version
 
 ```bash
-helm repo add wafie https://charts.wafie.io
-helm repo update 
-helm install wafie wafie/wafie \
+helm install wafie oci://ghcr.io/wafieio/charts/wafie \
+  --set api.ingress.host="wafie-api.example.com" \
+  --set console.ingress.host="wafie-console.example.com"
+```
+
+### Install Specific Version
+
+```bash
+helm install wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2 \
+  --set api.ingress.host="wafie-api.example.com" \
+  --set console.ingress.host="wafie-console.example.com"
+```
+
+### Install with Custom Values File
+
+```bash
+helm install wafie oci://ghcr.io/wafieio/charts/wafie -f custom-values.yaml
+```
+
+## List Available Versions
+
+### View on GitHub Packages
+https://github.com/wafieio/wafie/pkgs/container/charts%2Fwafie
+
+### View on GitHub Releases
+https://github.com/wafieio/wafie/releases
+
+### Using API
+```bash
+curl -s https://ghcr.io/v2/wafieio/charts/wafie/tags/list | jq -r '.tags[]'
+```
+
+## Upgrading the Chart
+
+### Upgrade to Latest Version
+
+```bash
+helm upgrade wafie oci://ghcr.io/wafieio/charts/wafie
+```
+
+### Upgrade to Specific Version
+
+```bash
+helm upgrade wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2
+```
+
+### Upgrade with New Values
+
+```bash
+helm upgrade wafie oci://ghcr.io/wafieio/charts/wafie \
+  --set api.ingress.host="new-api.example.com" \
+  --reuse-values
+```
+
+## Uninstalling the Chart
+
+```bash
+helm uninstall wafie
+```
+
+To also delete the namespace (if dedicated):
+```bash
+helm uninstall wafie
+kubectl delete namespace wafie
+```
+
+## Chart Information
+
+### Show Chart Details
+
+```bash
+# Show all chart information
+helm show all oci://ghcr.io/wafieio/charts/wafie --version 0.0.2
+
+# Show only values
+helm show values oci://ghcr.io/wafieio/charts/wafie --version 0.0.2
+
+# Show only readme
+helm show readme oci://ghcr.io/wafieio/charts/wafie --version 0.0.2
+```
+
+### Check Deployed Status
+
+```bash
+# List all releases
+helm list
+
+# Get release status
+helm status wafie
+
+# Get release values
+helm get values wafie
+```
+
+---
+
+## Production Deployment Example
+
+```bash
+helm install wafie oci://ghcr.io/wafieio/charts/wafie --version 0.0.2 \
+  --create-namespace \
+  --namespace wafie \
   --set api.ingress.host="wafie-api.stg.wafie.io" \
   --set api.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
   --set console.ingress.host="wafie-console.stg.wafie.io" \
   --set console.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod
 ```
 
-### [Local Dev Deployment](#local-dev-deployment)
+## Local Development Deployment
 
-### Production deployment
-
-
-
-
-#### Local Dev Deployment
+### Local Dev Deployment Setup
 ```bash
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
@@ -96,15 +197,13 @@ helm install wp oci://registry-1.docker.io/bitnamicharts/wordpress \
 Once deployed, try access `http://wp.$(ipconfig getifaddr en0).nip.io`
 You should get WordPress website. 
 
-Deploy wafie helm chart 
+Deploy wafie helm chart
 ```bash
-helm repo add wafie https://charts.wafie.io
-helm repo update 
-helm upgrade -i wafie wafie/wafie \
-  --set api.ingress.host=wafie-api.$(colima ls | awk '{print $8}' | tail -1).nip.io \
-  --set console.ingress.host=wafie-console.$(colima ls | awk '{print $8}' | tail -1).nip.io \
+helm install wafie oci://ghcr.io/wafieio/charts/wafie \
+  --set api.ingress.host=wafie-api.$(ipconfig getifaddr en0).nip.io \
+  --set console.ingress.host=wafie-console.$(ipconfig getifaddr en0).nip.io \
   --set api.ingress.tls=false \
-  --set console.ingress.tls=false 
+  --set console.ingress.tls=false
 ```
 
 Check all wafie pods are running 

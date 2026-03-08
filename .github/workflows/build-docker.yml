@@ -190,6 +190,22 @@ jobs:
           helm push wafie-${{ steps.chart_version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
           echo "Pushed Helm chart to oci://ghcr.io/${{ github.repository_owner }}/charts/wafie:${{ steps.chart_version.outputs.version }}"
 
+      - name: Install ORAS
+        if: steps.check_helm_oci.outputs.exists == 'false'
+        run: |
+          VERSION="1.1.0"
+          curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar.gz"
+          mkdir -p oras-install/
+          tar -zxf oras_${VERSION}_*.tar.gz -C oras-install/
+          sudo mv oras-install/oras /usr/local/bin/
+          rm -rf oras_${VERSION}_*.tar.gz oras-install/
+
+      - name: Tag Helm chart as latest
+        if: steps.check_helm_oci.outputs.exists == 'false'
+        run: |
+          oras tag ghcr.io/${{ github.repository_owner }}/charts/wafie:${{ steps.chart_version.outputs.version }} latest
+          echo "Tagged Helm chart as latest"
+
       - name: Create GitHub Release
         if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
