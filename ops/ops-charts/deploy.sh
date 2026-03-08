@@ -78,3 +78,39 @@ helm install openebs-nfs openebs-nfs/nfs-provisioner \
   --namespace openebs \
   --create-namespace \
   --set nfsStorageClass.backendStorageClass="openebs-nfs"
+
+
+postgresql:
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+
+helm upgrade -i bowapp bow/bagofwords \
+  --set host=bow.192.168.64.8.nip.io \
+  --set ingress.tls=false \
+  --set postgresql.enabled=false
+
+
+helm upgrade -i bowapp bow/bagofwords \
+  --set host=bow.192.168.64.8.nip.io \
+  --set ingress.tls.enabled=false \
+  --set postgresql.auth.username=bowapp \
+  --set postgresql.auth.password=bowapp \
+  --set postgresql.auth.database=bowapp \
+  --set postgresql.global.security.allowInsecureImages=true \
+  --set postgresql.image.repository=bitnamilegacy/postgresql \
+  --set postgresql.primary.livenessProbe.enabled=false \
+  --set postgresql.primary.readinessProbe.enabled=false \
+  --set postgresql.primary.startupProbe.enabled=false \
+  --set postgresql.livenessProbe.enabled=false \
+  --set postgresql.readinessProbe.enabled=false \
+  --set postgresql.startupProbe.enabled=false \
+  --set config.smtp.port=25 \
+  --set config.smtp.host="foo-bar" \
+  --set config.smtp.host="foo-bar" \
+  --set config.smtp.username="foo-bar" \
+  --set config.smtp.password="foo-bar" \
+  --set config.smtp.from_email="foo@bar.com" \
+  --set config.smtp.from_name="Foo Bar"

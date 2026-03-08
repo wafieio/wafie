@@ -41,7 +41,7 @@ spec:
           command:
             - /usr/local/bin/gateway
             - start
-            - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.api.svc.name .Release.Namespace (.Values.api.svc.port | int)) }}
+            - --api-addr={{ printf "http://%s.%s.svc:%d" .Values.api.svc.name .Release.Namespace (.Values.api.svc.port | int) }}
           volumeMounts:
             - mountPath: /data/audit
               name: gateway-audit-data
@@ -54,7 +54,7 @@ spec:
         - name: proxy-xproc
           image: {{.Values.gateway.xproc}}
           args:
-          - --api-addr={{ .Values.config.apiAddr | default (printf "http://%s.%s.svc:%d" .Values.api.svc.name .Release.Namespace (.Values.api.svc.port | int)) }}
+          - --api-addr={{ default (printf "http://%s.%s.svc:%d" .Values.api.svc.name .Release.Namespace (.Values.api.svc.port | int)) }}
           volumeMounts:
             - name: xproc-socket
               mountPath: /var/run/wafie/xproc

@@ -5,6 +5,7 @@ metadata:
   namespace: {{.Release.Namespace}}
   annotations: {{ .Values.api.ingress.annotations | toJson }}
 spec:
+  ingressClassName: {{.Values.api.ingress.class}}
   rules:
     - host: "{{ .Values.api.ingress.host }}"
       http:
@@ -20,5 +21,5 @@ spec:
   tls:
     - hosts:
         - "{{ .Values.api.ingress.host }}"
-      secretName: {{ .Values.api.svc.name }}-certs
+      secretName: {{ .Values.api.ingress.secretName }}
 {{- end }}

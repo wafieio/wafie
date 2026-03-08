@@ -33,7 +33,6 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-          # Health checks
           readinessProbe:
             httpGet:
               path: /

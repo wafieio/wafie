@@ -5,6 +5,13 @@ metadata:
   name: wafie-console-config
   namespace: {{ .Release.Namespace }}
 data:
-  # WAFie API - Internal K8s service URL
-  WAFIE_API_URL: "http://{{.Values.api.svc.name}}.{{.Release.Namespace}}.svc"
+  {{- if .Values.api.ingress.enabled }}
+    {{- if .Values.api.ingress.tls}}
+  WAFIE_API_HOST: "https://{{.Values.api.ingress.host}}"
+    {{- else}}
+  WAFIE_API_HOST: "http://{{.Values.api.ingress.host}}"
+    {{- end }}
+  {{- else }}
+  WAFIE_API_HOST: "http://{{.Values.api.svc.name}}.{{.Release.Namespace}}.svc"
+  {{- end }}
 {{- end }}

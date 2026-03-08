@@ -1,14 +1,13 @@
-
-# base host which will be used as a base domain
-# for different services
-
 # Control Plane API parameters
 api:
   image: wafieio/api:latest
   ingress:
+    enabled: true
     tls: true
     host: ""
     annotations: {}
+    secretName: wafie-api-certs
+    class: nginx
   svc:
     name: wafie-api
     port: 80
@@ -29,17 +28,14 @@ relay:
 
 console:
   enabled: true
-  image: docker.io/wafieio/console:latest
+  image: wafieio/wafie-console:latest
   ingress:
+    enabled: true
     tls: true
     host: ""
     annotations: {}
-
-
-# Shared configurations
-config:
-  apiAddr: ""
-
+    secretName: wafie-console-certs
+    class: nginx
 
 # postgresql configurations
 postgresql:

@@ -316,6 +316,10 @@ func (ta *TokenAuth) Merge(reqTokenAuth *wv1.TokenAuthPutRequest) {
 	if reqTokenAuth.Enabled != nil {
 		ta.Enabled = *reqTokenAuth.Enabled
 	}
+	// set authorization header name
+	if reqTokenAuth.Header != nil && *reqTokenAuth.Header != "" {
+		ta.Header = *reqTokenAuth.Header
+	}
 	// find all indexes for removal
 	var removeAt []int
 	for idx, currentPath := range ta.PathWhitelist {
@@ -390,22 +394,42 @@ func (ta *TokenAuth) Merge(reqTokenAuth *wv1.TokenAuthPutRequest) {
 }
 
 func (p *IPRules) Merge(putProtectionReq *wv1.PutProtectionRequest) {
-	var block []*wv1.IP
-	var allow []*wv1.IP
+	// Start with current state
+	currentAllow := p.Allow
+	currentBlock := p.Block
+
 	// remove IPs
 	if putProtectionReq.IpRulesToRemove != nil {
-		// remove from allow list
-		allow = append(allow, removeIPs(p.Allow, putProtectionReq.IpRulesToRemove.Allow)...)
-		// remove from block list
-		block = append(block, removeIPs(p.Block, putProtectionReq.IpRulesToRemove.Block)...)
+		// Convert removeIPs results back to []IP for next operation
+		allowProto := removeIPs(currentAllow, putProtectionReq.IpRulesToRemove.Allow)
+		currentAllow = make([]IP, len(allowProto))
+		for i, ip := range allowProto {
+			currentAllow[i] = IP{CIDR: ip.Cidr}
+		}
+
+		blockProto := removeIPs(currentBlock, putProtectionReq.IpRulesToRemove.Block)
+		currentBlock = make([]IP, len(blockProto))
+		for i, ip := range blockProto {
+			currentBlock[i] = IP{CIDR: ip.Cidr}
+		}
 	}
-	// add IPs
+
+	// add IPs to the (possibly filtered) current state
+	var allow []*wv1.IP
+	var block []*wv1.IP
 	if putProtectionReq.IpRulesToAdd != nil {
-		//add to allow list
-		allow = append(allow, addIPs(p.Allow, putProtectionReq.IpRulesToAdd.Allow)...)
-		// add to block list
-		block = append(block, addIPs(p.Block, putProtectionReq.IpRulesToAdd.Block)...)
+		allow = addIPs(currentAllow, putProtectionReq.IpRulesToAdd.Allow)
+		block = addIPs(currentBlock, putProtectionReq.IpRulesToAdd.Block)
+	} else {
+		// No additions, just convert current state to proto format
+		for _, ip := range currentAllow {
+			allow = append(allow, &wv1.IP{Cidr: ip.CIDR})
+		}
+		for _, ip := range currentBlock {
+			block = append(block, &wv1.IP{Cidr: ip.CIDR})
+		}
 	}
+
 	p.FromProto(&wv1.IPRules{Allow: allow, Block: block})
 }
 
