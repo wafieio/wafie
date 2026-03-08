@@ -1,19 +1,29 @@
-name: Build and Push Docker Image
+name: Build and Release
+
 on:
   push:
     branches:
       - main
+
 jobs:
   build:
-    if: contains(github.event.head_commit.message, '[build-docker]')
-    name: Build wafie control plane and gateway images
+    if: contains(github.event.head_commit.message, 'release')
+    name: Build and push multi-arch images
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        architecture: [ amd64 ]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Extract version from Chart.yaml
+        id: chart_version
+        run: |
+          VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -24,22 +34,84 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push control plane
+      - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: apisrv/Containerfile
           push: true
-          tags: dimssss/wafie-control-plane:latest
-          file: dockerfiles/Dockerfile_wafie_control_plane
-          platforms: linux/${{ matrix.architecture }}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/api:${{ steps.chart_version.outputs.version }}
 
-
-      - name: Build and push gateway
+      - name: Build and push Gateway image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: gateway/Containerfile
           push: true
-          build-args: ARCH=${{ matrix.architecture }}
-          tags: dimssss/wafie-gateway:latest
-          file: dockerfiles/Dockerfile_wafie_gateway
-          platforms: linux/${{ matrix.architecture }}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/gateway:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/gateway:${{ steps.chart_version.outputs.version }}
+
+      - name: Build and push XProc image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: xproc/Containerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/xproc:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/xproc:${{ steps.chart_version.outputs.version }}
+
+      - name: Build and push Relay image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: relay/Containerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/relay:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/relay:${{ steps.chart_version.outputs.version }}
+
+  helm:
+    needs: build
+    name: Package and publish Helm chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from Chart.yaml
+        id: chart_version
+        run: |
+          VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Chart version: $VERSION"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Package Helm chart
+        run: |
+          helm package chart
+          echo "Packaged: wafie-${{ steps.chart_version.outputs.version }}.tgz"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.chart_version.outputs.version }}
+          name: Release v${{ steps.chart_version.outputs.version }}
+          files: |
+            wafie-${{ steps.chart_version.outputs.version }}.tgz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
