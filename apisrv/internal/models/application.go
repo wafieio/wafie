@@ -86,7 +86,7 @@ func (s *ApplicationRepository) CreateApplication(req *v1.CreateApplicationReque
 func (s *ApplicationRepository) ListApplications(options *v1.ListApplicationsOptions) ([]*Application, error) {
 	var err error
 	var apps []*Application
-	if options.IncludeIngress {
+	if options != nil && options.IncludeIngress {
 		err = s.db.Preload("Ingresses").
 			Preload("Ingresses.Upstream").
 			Find(&apps).Error
